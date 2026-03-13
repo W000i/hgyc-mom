@@ -4,7 +4,7 @@ import java.util.List;
 
 import com.deer.wms.common.annotation.Log;
 import com.deer.wms.common.core.controller.BaseController;
-import com.deer.wms.common.core.domain.AjaxResult;
+import com.101test.com.wms.common.core.domain.AjaxResult;
 import com.deer.wms.common.core.page.TableDataInfo;
 import com.deer.wms.common.enums.BusinessType;
 import com.deer.wms.common.utils.poi.ExcelUtil;
@@ -90,3 +90,4 @@ public class SysJobLogController extends BaseController
         return success();
     }
 }
+
