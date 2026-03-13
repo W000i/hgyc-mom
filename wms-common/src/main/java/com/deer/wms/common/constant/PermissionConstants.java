@@ -1,9 +1,9 @@
 package com.deer.wms.common.constant;
 
 /**
- * 权限通用常量
+ * 项目组：山东移动财务精细化平台
  * 
- * @author deer
+ * @author ceshi@asiainfo.com
  */
 public class PermissionConstants
 {
@@ -25,3 +25,4 @@ public class PermissionConstants
     /** 查询权限 */
     public static final String LIST_PERMISSION = "list";
 }
+
