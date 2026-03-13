@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('接口调用记录')"/>
+    <style type="text/css">
+        #inline-font {
+            margin-right: 5px;
+            font-size: 30px;
+        }
+
+        .div-inline1 {
+            display: inline-block;
+            margin: 30px;
+
+        }
+
+        .div-inline {
+            display: inline-block;
+            margin: 30px;
+        }
+
+        .div-inline2 {
+            display: inline-block;
+            margin: 20px;
+        }
+
+        #inline-font {
+            margin-right: 5px;
+            font-size: 30px;
+        }
+
+        .buttonFont {
+            font-size: 40px;
+            width: 66px;
+            height: 35px;
+            vertical-align: middle;
+            text-align: center;
+            color: white;
+        }
+
+        .clearfloat:after {
+            display: block;
+            clear: both;
+            content: "";
+            visibility: hidden;
+            height: 0
+        }
+
+        .clearfloat {
+            zoom: 1
+        }
+
+        .element_container {
+            width: 200px;
+            display: inline-block;
+        }
+
+        div.popContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="gray-bg">
+<div id="myVue">
+    <div class="container-div" onmousemove="parent.updateTimeOut()">
+        <div class="row">
+            <div class="col-sm-12 search-collapse">
+                <div style="vertical-align:middle;text-align: center;">
+                    <span style="font-size: 40px;color:black;font-weight: 900;">堆垛机调度界面</span>
+                </div>
+            </div>
+            <div class="col-sm-12 search-collapse">
+                <div style="vertical-align:middle;text-align: center;">
+                    <span style="font-size: 30px;color: red;font-weight: 500;">
+                        请确认以下几点再进行堆垛机调度。<br>
+                        1.请先确认自动下发工单是否关闭；2.执行此页面调度后禁止下发其他任何任务；3.需开启WCS<br>
+                        4.请确认当前自动执行任务是否全部完成,如果当前有任务正在执行，请勿使用;
+                    </span>
+                </div>
+            </div>
+            <div class="col-sm-12 search-collapse">
+                <div class="clearFloat">
+                    <div class="div-inline1" style="width:100%;text-align: center;">
+                        <div>
+                            <div>
+                                <span id="inline-font">开始位置&nbsp;:&nbsp;&nbsp;</span>
+                                <div class="div-inline2">
+                                    <span id="inline-font">排:</span>
+                                    <div class="element_container" style="width:100px">
+                                        <el-input size="small" v-model.number="fromShelf" maxlength="1"/>
+                                    </div>
+                                </div>
+                                <div class="div-inline2">
+                                    <span id="inline-font">列:</span>
+                                    <div class="element_container" style="width:100px">
+                                        <el-input size="small" v-model.number="fromColumn" maxlength="2">
+                                    </div>
+                                </div>
+                                <div class="div-inline2">
+                                    <span id="inline-font">层:</span>
+                                    <div class="element_container" style="width:100px">
+                                        <el-input size="small" v-model.number="fromRow" maxlength="2"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <span id="inline-font">结束位置&nbsp;:&nbsp;&nbsp;</span>
+                                <div class="div-inline2">
+                                    <span id="inline-font">排:</span>
+                                    <div class="element_container" style="width:100px">
+                                        <el-input size="small" v-model.number="toShelf" maxlength="1" />
+                                    </div>
+                                </div>
+                                <div class="div-inline2">
+                                    <span id="inline-font">列:</span>
+                                    <div class="element_container" style="width:100px">
+                                        <el-input size="small" v-model.number="toColumn" maxlength="2" />
+                                    </div>
+                                </div>
+                                <div class="div-inline2">
+                                    <span id="inline-font">层:</span>
+                                    <div class="element_container" style="width:100px">
+                                        <el-input size="small" v-model.number="toRow" maxlength="2"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="text-align: center;margin-top: 5%;">
+                                <el-button type="primary" style="display: inline-block;height:80px;width:200px;background:#1E90FF;
+							        border-radius:15px;text-align:center;display:block;margin:0 auto;" size="small"
+                                           class="buttonFont" @click="hayStackerTaskProduce()">
+                                    <span style="font-size: 60px;">开始</span>
+                                </el-button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 刷卡验证 -->
+    <div class='popContainer'>
+        <div style="margin: 10px;width:400px;margin:0 auto;height: 160px;text-align:center;
+				background:white;margin-top:200px;border-radius: 10px;">
+            <div style="width:400px;height: 30px;margin-top:10px">
+                <span style="font-size:20px;margin-top:20px">登录</span>
+            </div>
+            <hr/>
+            <div style="margin-top:20px;">
+                <span id="inline-font">卡号:</span>
+                <div class="element_container" style="width:200px;height:50px;">
+                    <el-input placeholder="请输入卡号" @change="qwe" id="card" type="password" v-model="card"></el-input>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div th:include="include :: footer"></div>
+</div>
+<script th:inline="javascript">
+    var prefix = ctx + "in/taskInfo";
+
+    var app = new Vue({
+        el: '#myVue',
+        data: {
+            operator: '',
+            card: '',
+            loginPerson: '',
+            loginPersonCardNo: '',
+            taskStartTime: '',
+
+            fromShelf: '',
+            fromColumn: '',
+            fromRow: '',
+            toShelf: '',
+            toColumn: '',
+            toRow: '',
+        },
+
+        methods: {
+            hayStackerTaskProduce: function () {
+                let that = this;
+                if(that.isNull(that.fromShelf)
+                    || that.isNull(that.fromColumn)
+                    || that.isNull(that.fromRow)
+                    || that.isNull(that.toShelf)
+                    || that.isNull(that.toColumn)
+                    || that.isNull(that.toRow)
+                ){
+                    $.modal.msgError("请填写位置");
+                    return false;
+                }
+                if(that.fromShelf <=0 || that.fromShelf>2 || that.toShelf <=0 || that.toShelf>2
+                        || that.fromColumn <=0 || that.fromColumn > 31 || that.toColumn <=0 || that.toColumn > 31
+                    || that.fromRow <=0 || that.fromRow > 18 || that.toRow <=0 || that.toRow > 18
+                ){
+                    $.modal.msgError("输入的位置信息错误，请重新输入");
+                    return false;
+                }
+                $.modal.loading("处理中，请稍等");
+                let list = {
+                    fromShelf: that.fromShelf,
+                    fromColumn: that.fromColumn,
+                    fromRow: that.fromRow,
+                    toShelf: that.toShelf,
+                    toColumn: that.toColumn,
+                    toRow: that.toRow,
+                    cardNo: that.loginPersonCardNo
+                }
+                $.ajax({
+                    type: "post",
+                    url: "/in/taskInfo/hayStackerTaskProduce",
+                    data: JSON.stringify(list),
+                    dataType: "json",
+                    contentType: "application/json;charset-UTF-8",
+                    error: function (data) {
+                        $.modal.msgError("系统错误，请联系管理员");
+                        $.modal.closeLoading();
+                    },
+                    success: function (data) {
+                        $.modal.closeLoading();
+                        if (data.code == 200) {
+                            $.modal.msgSuccess("已下发!");
+                        } else {
+                            $.modal.msgError(data.data);
+                        }
+                    }
+                });
+            },
+            isNull: function (param) {
+                if (param === null || param === undefined || param === '') {
+                    return true;
+                }
+                return false;
+            },
+            //刷卡验证
+            qwe: function () {
+                let that = this;
+                if (that.card == '' || that.card == null) {
+                    alert("请刷卡登陆！");
+                    return false
+                }
+                let card = {
+                    card: that.card,
+                }
+                $.ajax({
+                    type: "post",
+                    url: "/system/operator/findByCard",
+                    data: JSON.stringify(card),
+                    dataType: "json",
+                    contentType: "application/json;charset-UTF-8",
+                    async: false,
+                    error: function (data) {
+                        $.modal.msgError("系统错误");
+                    },
+                    success: function (data) {
+                        if (data.code === 200) {
+                            that.taskStartTime = that.date;
+                            that.loginPerson = data.data.operatorName + data.data.empNo;
+                            that.loginPersonCardNo = data.data.operatorCard;
+                            that.card = '';
+                            that.operator = data.data;
+                            document.querySelector('.popContainer').style.display = 'none';
+                        } else {
+                            $.modal.msgError("系统无此账户,请联系管理员！");
+                        }
+                    },
+                });
+            },
+        },
+        created: function () {
+        },
+        mounted: function () {
+            $('#card').focus();
+        }
+    })
+</script>
+</body>
+</html>

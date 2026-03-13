@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <th:block th:include="include :: header('详情')"/>
+    <title>入库操作台</title>
+    <script src="/js/vue.js"></script>
+    <script src="/js/jquery.min.js"></script>
+    <link th:href="@{/css/element-ui@2.5.4/element-ui.css}" rel="stylesheet"/>
+    <script th:src="@{/css/element-ui@2.5.4/element-ui.js}"></script>
+
+    <script th:src="@{/css/rkLib/lib/datav@2.7.4.min.vue.js}"></script>
+    <script th:src="@{/css/rkLib/lib/ecaharts-gl.min.js}"></script>
+    <link th:href="@{/css/rkLib/lib/style.css}" rel="stylesheet"/>
+
+    <style>
+        div.popContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.3);
+            text-align: center;
+            z-index: 99999;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="rk-app">
+    <dv-full-screen-container>
+        <el-row>
+            <el-col :span="8">&nbsp;</el-col>
+            <el-col :span="8" style="text-align: center;">
+                <span style="font-size: 50px;color:cornsilk;font-weight: bold;" @dblclick="showModal()">覆铜板库入料口</span>
+            </el-col>
+            <el-col :span="8">&nbsp;</el-col>
+        </el-row>
+        <el-row>
+            <el-col :span="7">
+                <dv-decoration-10 class="leftBox" style="width:90%;height:5px;"/>
+            </el-col>
+            <el-col :span="5">
+                <dv-decoration-8 class="leftBox" style="width:300px;height:50px;"/>
+            </el-col>
+            <el-col :span="5">
+                <dv-decoration-8 :reverse="true" class="rightBox" style="width:300px;height:50px;"/>
+            </el-col>
+            <el-col :span="7">
+                <dv-decoration-10 class="rightBox" style="width:90%;height:5px;"/>
+            </el-col>
+        </el-row>
+        <el-row>
+            <el-col :span="24">
+                <dv-border-box-1>
+                    <div style="padding: 20px;">
+                        <el-row>
+                            <!-- 左 -->
+                            <el-col :span="6">
+                                <dv-border-box-3 style="height: 900px;">
+                                    <el-row v-show="titles[0].value" style="padding: 30px 20px 0px 20px;">
+                                        <el-col :span="24">
+                                            <div class="titleText" style="text-align: center;">
+                                                <!--{{titles[0].label}}-->入库数量统计
+                                            </div>
+                                            <dv-conical-column-chart :config="config1"
+                                                                     style="width:94%;height:250px;margin: auto;"/>
+                                        </el-col>
+                                        <dv-decoration-2 style="width:98%;height:5px;margin: auto;padding-top: 20px;"/>
+                                    </el-row>
+                                    <el-row v-show="titles[1].value" style="padding: 30px 20px 0px 20px;">
+                                        <el-col :span="24">
+                                            <div class="titleText" style="text-align: center;">
+                                                <!--{{titles[1].label}}-->入库物料数统计
+                                            </div>
+                                            <dv-scroll-ranking-board :config="config3"
+                                                                     style="width:94%;height:350px;margin: auto;"/>
+                                        </el-col>
+                                    </el-row>
+                                </dv-border-box-3>
+                            </el-col>
+                            <!-- 中 -->
+                            <el-col :span="12">
+                                <!-- 中上 -->
+                                <dv-border-box-3>
+                                    <el-row style="padding: 30px 20px 0px 20px;">
+                                        <el-col :span="6">
+                                            <dv-decoration-1 style="width:100%;height:50px;"/>
+                                        </el-col>
+                                        <el-col :span="12" style="text-align: center;">
+                                            <span class="titleText">仓库货位占用率</span>
+                                        </el-col>
+                                        <el-col :span="6">
+                                            <dv-decoration-1 style="width:100%;height:50px;"/>
+                                        </el-col>
+                                    </el-row>
+                                    <el-row style="padding: 30px 20px 0px 20px;">
+                                        <el-col :span="12" style="text-align: center;">
+                                            <div class="numL">
+                                                <span class="numTextSpan">已使用货位数</span>
+                                                <span class="numSpan" id="availableCell"
+                                                      v-bind:style="screenShows.availableCell > screenShows.expectedWaring ? (screenShows.availableCell > screenShows.alarm ? 'color:red':'color:yellow'):'color:white'"
+                                                >{{screenShows.availableCell}}</span>
+                                            </div>
+                                        </el-col>
+                                        <el-col :span="12" style="text-align: center;">
+                                            <div class="numR">
+                                                <span class="numTextSpan">剩余可用货位数</span>
+                                                <span class="numSpan" id="notItemCell">{{screenShows.notItemCell}}</span>
+                                            </div>
+                                        </el-col>
+                                    </el-row>
+                                    <el-row style="padding: 0px 20px 30px 20px;">
+                                        <el-col :span="8" style="text-align: right;">
+                                            <div class="jyNumText">
+                                                库存周转(天)
+                                                <span class="jyNum" style="margin-left: 20px;">{{totalIns.turnoverDays}}</span>
+                                            </div>
+                                        </el-col>
+                                        <el-col :span="8" style="text-align: center;">
+                                            <dv-decoration-9
+                                                    style="width:250px;height:250px;font-size: 30px;color: #7ec699;font-weight: bold;margin:auto;">
+                                                <span id="cellOccupyRatio"></span>
+                                                {{screenShows.cellOccupyRatio}}
+                                            </dv-decoration-9>
+                                        </el-col>
+                                       <!-- <el-col :span="8" style="text-align: left;">
+                                            <div class="jyNumText">
+                                                <span class="jyNum" style="margin-right: 20px;">5345</span> 禁用货位
+                                            </div>
+                                        </el-col>-->
+                                    </el-row>
+                                </dv-border-box-3>
+                                <!-- 中下 -->
+                                <div v-show="titles[2].value" style="text-align: center;">
+                                    <span class="titleText">{{titles[2].label}}</span>
+                                    <dv-scroll-board class="rkTab" :config="configMB"
+                                                     style="width:96%;height:300px;margin: auto;"/>
+                                </div>
+                            </el-col>
+                            <!-- 右 -->
+                            <el-col :span="6" style="height: 900px;position: relative;">
+                                <dv-border-box-3 style="height: 780px;">
+                                    <el-row v-show="titles[3].value" style="padding: 30px 20px 0px 20px;">
+                                        <el-col :span="24">
+                                            <div class="titleText" style="text-align: center;">
+                                                {{titles[3].label}}
+                                            </div>
+                                            <dv-scroll-board class="bjTab" :config="config2"
+                                                             style="width:94%;height:600px;margin: auto;"/>
+                                        </el-col>
+                                        <dv-decoration-2 style="width:98%;height:5px;margin: auto;padding-top: 20px;"/>
+                                    </el-row>
+                                    <!-- <el-row style="padding: 0px 20px 30px 20px;">
+                                        <el-col :span="24">
+                                            <div class="titleText" style="text-align: center;">
+                                                四五六</div>
+                                            <dv-active-ring-chart :config="config4" style="width:400px;height:400px;margin: auto;" />
+                                        </el-col>
+                                    </el-row> -->
+                                </dv-border-box-3>
+                                <el-row style="padding: 0px 20px 0px 20px;position: absolute;bottom: 0;width: 100%;">
+                                    <el-col :span="24">
+                                        <div class="timeText">
+                                            {{time1}}
+                                        </div>
+                                        <div class="timeText">
+                                            {{time2}}
+                                        </div>
+                                    </el-col>
+                                </el-row>
+                            </el-col>
+                        </el-row>
+                    </div>
+                </dv-border-box-1>
+            </el-col>
+        </el-row>
+    </dv-full-screen-container>
+
+
+    <div class='popContainer'>
+        <div style="margin: 10px;width:600px;margin:0 auto;height: 200px;text-align:center;
+    background:white;margin-top:200px;border-radius: 10px;">
+            <div style="width:600px;height: 30px;margin-top:10px">
+                <span style="font-size:20px;margin-top:20px">选择</span>
+            </div>
+            <hr/>
+            <div style="margin-top:20px;">
+                <el-checkbox v-for="title in titles" v-model="title.value">{{title.label}}</el-checkbox>
+            </div>
+            <div style="margin-top:20px;">
+                <el-button @click="hideModal()">取 消</el-button>
+                <el-button type="primary" @click="setTitles()">确 定</el-button>
+            </div>
+        </div>
+    </div>
+
+    <!--<el-dialog title="设置" :visible.sync="dialogVisible" width="30%">
+        <div>
+            <el-checkbox v-for="title in titles" v-model="title.value">{{title.label}}</el-checkbox>
+        </div>
+        <span slot="footer" class="dialog-footer">
+                <el-button @click="dialogVisible = false">取 消</el-button>
+                <el-button type="primary" @click="setTitles()">确 定</el-button>
+            </span>
+    </el-dialog>-->
+</div>
+</body>
+
+<script>
+    var app = new Vue({
+        el: '#rk-app',
+        data: {
+            titles: [{
+                label: '入库数量统计',
+                value: true
+            }, {
+                label: '入库物料数统计',
+                value: true
+            }, {
+                label: '入库任务',
+                value: true
+            }, {
+                label: '报警信息',
+                value: true
+            }],
+            // dialogVisible: false,
+            // return {
+            timers: [],
+            currentTime: new Date(),
+            time1: '',
+            time2: '',
+            configMB: {
+                header: ['箱号', '料号', '批次','数量','订单号','完成时间'],
+                data: [],
+                index: true,
+                indexHeader: '序号',
+                columnWidth: [70,100,120,170,100,120,200],
+                rowNum: 5,
+                align: ['center'],
+                waitTime: 2000,
+                carousel: 'single', // 'single'|'page'
+            },
+            config1: {
+                data: [{
+                    name: '周口',
+                    value: 55
+                }, {
+                    name: '南阳',
+                    value: 120
+                }, {
+                    name: '西峡',
+                    value: 71
+                }, {
+                    name: '驻马店',
+                    value: 66
+                }, {
+                    name: '新乡',
+                    value: 80
+                }, {
+                    name: '信阳',
+                    value: 35
+                }, {
+                    name: '漯河',
+                    value: 15
+                }],
+                img: [
+                    '/img/icon/1st.png',
+                    '/img/icon/2st.png',
+                    '/img/icon/3st.png',
+                    '/img/icon/4st.png',
+                    '/img/icon/5st.png',
+                    '/img/icon/6st.png',
+                    '/img/icon/7st.png'
+                ],
+                showValue: true
+
+            },
+            config2: {
+                data: [
+                ],
+                align: ['left'],
+                oddRowBGC: '#186885 ',
+                evenRowBGC: '#282c34 ',
+                rowNum: 7,
+                waitTime: 5000,
+                carousel: 'page', // 'single'|'page'
+            },
+            config3: {
+                data: [{
+                    name: '周口',
+                    value: 55
+                }, {
+                    name: '南阳',
+                    value: 120
+                }, {
+                    name: '西峡',
+                    value: 78
+                }, {
+                    name: '驻马店',
+                    value: 66
+                }, {
+                    name: '新乡',
+                    value: 80
+                }],
+                unit: '个',
+            },
+            config4: {
+                data: [{
+                    name: '周口',
+                    value: 55
+                }, {
+                    name: '南阳',
+                    value: 120
+                }, {
+                    name: '西峡',
+                    value: 78
+                }, {
+                    name: '驻马店',
+                    value: 66
+                }, {
+                    name: '新乡',
+                    value: 80
+                }]
+            },
+
+            // }
+            screenShows: {
+                warnInformation: [],
+                taskInformation: [],
+                availableCell: '',
+                alarm: '',
+                cellOccupyRatio: '',
+                notItemCell: '',
+                totalCell: '',
+                turnoverDays: '',
+                expectedWaring: '',
+            },
+            totalIns: {
+                turnoverDays:'',
+                totalSevenDays:[],
+            },
+        },
+        methods: {
+            showModal(){
+                // app.dialogVisible = false;
+                document.querySelector(".popContainer").style.display = "block";
+            },
+            hideModal(){
+                // app.dialogVisible = false;
+                document.querySelector(".popContainer").style.display = "none";
+            },
+            setTitles: function() {
+                var titles = JSON.parse(JSON.stringify(app.titles));
+                localStorage.setItem("titles", JSON.stringify(titles));
+                // app.dialogVisible = false;
+                app.hideModal();
+            },
+            zero: function (obj) {
+                if (obj < 10) {
+                    return "0" + obj;
+                } else {
+                    return obj;
+                }
+            },
+            getData: function () {
+                this.time1 =
+                    new Date().getFullYear() +
+                    "-" +
+                    this.zero((new Date().getMonth() + 1)) +
+                    "-" +
+                    this.zero(new Date().getDate())
+                this.time2 =
+                    this.zero(new Date().getHours()) +
+                    ":" +
+                    this.zero(new Date().getMinutes()) +
+                    ":" +
+                    this.zero(new Date().getSeconds());
+            },
+            getServerData: function (url, type, param, success) {
+                var params = {};
+                var token = localStorage.getItem('token');
+                type === 'get' ? params = this.JSON(param) : params = JSON.stringify(param);
+                console.log('token:', token, ' url:', url, ' params:', JSON.stringify(params));
+                $.ajax({
+                    type: type,
+                    data: params,
+                    dataType: "json",
+                    timeout: 1000 * 60 * 60,
+                    headers: {
+                        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+                        "access-token": token
+                    },
+                    contentType: "application/json",
+                    url: url,
+                    async: false,
+                    success: function (res) {
+                        success(res);
+                    },
+                    error: function (err) {
+                        console.error(err.statusText, err || '未知的错误!');
+                    }
+                });
+            },
+            isNull: function (val, type) {
+                if (type === '') {
+                    if (val === null || val === undefined) {
+                        return false
+                    } else {
+                        return true
+                    }
+                } else {
+                    if (val === '' || val === null || val === undefined) {
+                        return false
+                    } else {
+                        return true
+                    }
+                }
+            },
+            JSON: function (data) {
+                if (typeof data === 'object') {
+                    return JSON.parse(JSON.stringify(data))
+                } else if (typeof data === 'string') {
+                    return JSON.parse(data)
+                }
+            },
+            tips:function(message, type, time, end) {
+                var duration = 1500;
+                if (time) {
+                    duration = time
+                }
+                this.$message({
+                    showClose: true,
+                    dangerouslyUseHTMLString: true,
+                    message: message,
+                    type: type,
+                    duration: duration,
+                    onClose: end
+                });
+            },
+            getScreenShowData:function(){
+                let that = this;
+                this.getServerData('/system/cellInfo/screenShow', 'get', {type: 1}, function(ret) {
+                    if (ret.code === 200) {
+                        that.screenShows = ret.data;
+                        // that.screenShows.availableCell = ret.data.availableCell;
+                        // that.screenShows.notItemCell = ret.data.notItemCell;
+                        // that.screenShows.cellOccupyRatio = ret.data.cellOccupyRatio;
+                        document.querySelector("#availableCell").innerText=ret.data.availableCell;
+                        document.querySelector("#notItemCell").innerText=ret.data.notItemCell;
+                        // document.querySelector("#cellOccupyRatio").innerText=ret.data.cellOccupyRatio;
+                        var list = ret.data.taskInformation;
+
+                        that.configMB.data = [];
+                        for(var i=0;i<list.length;i++){
+                            that.configMB.data.push([
+                                list[i].boxCode,
+                                list[i].itemCode,
+                                list[i].batch,
+                                list[i].quantity,
+                                list[i].billNo,
+                                // list[i].state == 0 ? "已下发" : list[i].state == 1 ? "任务中":"已完成",
+                                list[i].taskEndTime
+                            ]);
+                        }
+                        var list1 = ret.data.warnInformation;
+                        that.config2.data = [];
+                        for(var i=0;i<list1.length;i++){
+                            that.config2.data.push([
+                                list1[i].memo,
+                            ]);
+                        }
+                        that.updateHandler(1);
+                    } else {
+                        that.tips('服务器请求失败，稍后再试！','error');
+                        console.error(ret);
+                    }
+                })
+            },
+            getTotalInData:function(){
+                let that = this;
+                this.getServerData('/system/cellInfo/totalIn', 'get', {type: 1}, function(ret) {
+                    if (ret.code === 200) {
+                        that.totalIns = ret.data;
+                        var list = ret.data.totalSevenDays;
+                        console.log(that.config1.data);
+                        that.config1.data = [];
+                        that.config3.data = [];
+                        for(var i=0;i<list.length;i++){
+                            that.config1.data.push({
+                                name:list[i].times.substring(5,10),
+                                value:list[i].totalQuantity,
+                            });
+                            that.config3.data.push({
+                                name:list[i].times,
+                                value:list[i].totalItemCodeQuantity,
+                            });
+                        }
+                        that.updateHandler(2);
+                    } else {
+                        that.tips('服务器请求失败，稍后再试！','error');
+                        console.error(ret);
+                    }
+                })
+            },
+            // 更新数据的示例方法
+            updateHandler (index) {
+                if(index === 1){
+                    const { config2 } = this
+                    this.config2 = { ...this.config2 }
+                    const { configMB } = this;
+                    this.configMB = { ...this.configMB }
+                }else{
+                    const { config1 } = this
+                    this.config1 = { ...this.config1 }
+                    const { config3 } = this
+                    this.config3 = { ...this.config3 }
+                }
+            }
+        },
+        created: function () {
+            var that = this;
+            this.getData();
+            this.timers[0] = setInterval(function () {
+                that.getData();
+            }, 1000);
+
+        },
+        mounted: function () {
+            var titles = localStorage.getItem("titles");
+            if(titles !== null && titles !== "null" && titles !== undefined){
+                this.titles = JSON.parse(titles);
+            }
+
+            let that = this;
+            this.getScreenShowData();
+            this.getTotalInData();
+            this.timers[1] = setInterval(function () {
+                that.getScreenShowData();
+            }, 30*1000);
+            this.timers[2] = setInterval(function () {
+                that.getTotalInData();
+            }, 1000*60*60*24);
+        },
+        beforeDestroy: function () {
+            for(var i=0;i<this.timers.length;i++){
+                if (this.timers[i]) {
+                    clearInterval(this.timers[i]);
+                }
+            }
+        }
+    })
+</script>
+
+</html>
+

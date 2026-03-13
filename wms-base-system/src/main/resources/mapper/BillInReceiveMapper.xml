@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.deer.wms.base.system.dao.BillInReceiveMapper">
+  <resultMap id="BaseResultMap" type="com.deer.wms.base.system.model.BillInReceive">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="bill_in_receive_id" jdbcType="INTEGER" property="billInReceiveId" />
+    <result column="bill_in_detail_id" jdbcType="INTEGER" property="billInDetailId" />
+    <result column="receive_quantity" jdbcType="INTEGER" property="receiveQuantity" />
+    <result column="box_code" jdbcType="VARCHAR" property="boxCode" />
+    <result column="create_time" jdbcType="VARCHAR" property="createTime" />
+    <result column="pd" jdbcType="VARCHAR" property="pd" />
+    <result column="exp" jdbcType="VARCHAR" property="exp" />
+    <result column="batch" jdbcType="VARCHAR" property="batch" />
+    <result column="receipt_num" jdbcType="VARCHAR" property="receiptNum" />
+    <result column="operator_no" jdbcType="VARCHAR" property="operatorNo" />
+    <result column="state" jdbcType="INTEGER" property="state" />
+    <result column="po_header_id" jdbcType="INTEGER" property="poHeaderId" />
+    <result column="po_line_id" jdbcType="INTEGER" property="poLineId" />
+    <result column="line_location_id" jdbcType="INTEGER" property="lineLocationId" />
+    <result column="po_distribution_id" jdbcType="INTEGER" property="poDistributionId" />
+    <result column="item_id" jdbcType="INTEGER" property="itemId" />
+  </resultMap>
+
+  <select id="findList" parameterType="com.deer.wms.base.system.model.BillInReceiveCriteria" resultMap="BaseResultMap">
+    select * from bill_in_receive
+    where 1=1
+    <if test="state != null">
+       and state = #{state}
+    </if>
+    <if test="receiptNum != null and receiptNum != ''">
+       and receipt_num = #{receiptNum}
+    </if>
+    <if test="poDistributionId != null and poDistributionId != ''">
+      and po_distribution_id = #{poDistributionId}
+    </if>
+    <if test="poHeaderId != null and poHeaderId != ''">
+      and po_header_id = #{poHeaderId}
+    </if>
+    <if test="poLineId != null and poLineId != ''">
+      and po_line_id = #{poLineId}
+    </if>
+    <if test="lineLocationId != null and lineLocationId != ''">
+      and line_location_id = #{lineLocationId}
+    </if>
+    <if test="itemId != null and itemId != ''">
+      and item_id = #{itemId}
+    </if>
+    <if test="quantity != null and quantity != ''">
+      and receive_quantity = #{quantity}
+    </if>
+    <if test="batch != null and batch != ''">
+      and batch = #{batch}
+    </if>
+    <if test="orderParam != null and orderParam == 1002">
+      and receipt_num is null
+    </if>
+    <if test="orderParam != null and orderParam == 1001">
+        group by bill_in_detail_id
+    </if>
+
+  </select>
+</mapper>

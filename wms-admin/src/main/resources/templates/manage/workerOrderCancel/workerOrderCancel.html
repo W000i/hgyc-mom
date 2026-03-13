@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('接口调用记录')"/>
+    <style type="text/css">
+        #inline-font {
+            margin-right: 5px;
+            font-size: 30px;
+        }
+
+        .element_container {
+            width: 200px;
+            display: inline-block;
+        }
+
+        div.popContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="gray-bg">
+<div id="myVue">
+    <div class="container-div" onmousemove="parent.updateTimeOut()">
+        <div class="row">
+            <div class="col-sm-12 search-collapse">
+                <form id="formId">
+                    <div class="select-list">
+                        <ul>
+                            <li>
+                                工单ID：<input type="text" name="billNo"/>
+                            </li>
+                            <li>
+                                料号：<input type="text" name="itemCode"/>
+                            </li>
+                            <li>
+                                状态：
+                                <select name="state">
+                                    <option value="-1"></option>
+                                    <option value="0">任务等待下发</option>
+                                    <option value="1">任务已下发</option>
+                                </select>
+                            </li>
+                            <li>
+                                <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i
+                                        class="fa fa-search"></i>&nbsp;搜索</a>
+                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i
+                                        class="fa fa-refresh"></i>&nbsp;重置</a>
+                            </li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+
+            <div class="btn-group-sm" id="toolbar" role="group">
+                <a class="btn btn-danger btn-edit disabled" @click="manualCancel()"
+                   style="background-color: #ff0e15;border-color: #ff0e15;">
+                    <i class="glyphicon glyphicon-remove-sign"></i> 工单取消
+                </a>
+            </div>
+            <div class="col-sm-12 select-table table-striped">
+                <table id="bootstrap-table" data-mobile-responsive="true" style="white-space:nowrap"></table>
+            </div>
+        </div>
+    </div>
+    <!-- 刷卡验证 -->
+    <div class='popContainer'>
+        <div style="margin: 10px;width:400px;margin:0 auto;height: 160px;text-align:center;
+				background:white;margin-top:200px;border-radius: 10px;">
+            <div style="width:400px;height: 30px;margin-top:10px">
+                <span style="font-size:20px;margin-top:20px">登录</span>
+            </div>
+            <hr/>
+            <div style="margin-top:20px;">
+                <span id="inline-font">卡号:</span>
+                <div class="element_container" style="width:200px;height:50px;">
+                    <el-input placeholder="请输入卡号" @change="qwe" id="card" type="password" v-model="card"></el-input>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div th:include="include :: footer"></div>
+</div>
+<script th:inline="javascript">
+    var prefix = ctx + "out/billOutMaster";
+
+    $(function () {
+        var options = {
+            url: prefix + "/findListTwo",
+            createUrl: prefix + "/add",
+            updateUrl: prefix + "/edit/{id}",
+            removeUrl: prefix + "/remove",
+            exportUrl: prefix + "/export",
+            detailUrl: prefix + "/detail",
+            modalName: "调用接口记录",
+            showExport: false,
+            columns: [
+                {
+		            checkbox: true
+		        },
+                {
+                    field : 'billNo',
+                    title : '工单Id',
+                    sortable: true
+                },
+                {
+                    field : 'itemCode',
+                    title : '料号',
+                    sortable: true
+                },
+                {
+                    field : 'quantity',
+                    title : '数量',
+                    sortable: true
+                },
+                {
+                    field : 'createTime',
+                    title : '创建时间',
+                    sortable: true
+                },
+                {
+                    field : 'type',
+                    title : '类型',
+                    sortable: true,
+                    formatter:function(value,row,index){
+                        if(value === 1){
+                            return "MES工单自动出库";
+                        }
+                        else if(value === 2){
+                            return "工单手动出库";
+                        }
+                        else if(value === 3){
+                            return "退货出库";
+                        }
+                        else if(value === 4){
+                            return "IQC入库前库存扣减";
+                        }
+                        else if(value === 5){
+                            return "账户别名发放";
+                        }
+                        else if(value === 6){
+                            return "组织间转移出库";
+                        }
+                        else if(value === 7){
+                            return "物料转卖";
+                        }
+                        else if(value === 8){
+                            return "非工单出库接收";
+                        }
+                        else if(value === 9){
+                            return "退库";
+                        }
+                        else if(value === 10){
+                            return "报废出库";
+                        }
+                    }
+                },
+                {
+                    field : 'state',
+                    title : '状态',
+                    sortable: true,
+                    formatter:function(value,row,index){
+                        if(value === 0){
+                            return "任务等待下发";
+                        }
+                        else if(value === 1){
+                            return "任务已下发";
+                        }
+                        else if(value === 2){
+                            return "任务已完成";
+                        }
+                        else if(value === 3){
+                            return "工单取消";
+                        }
+                    }
+                },
+                {
+                    field : 'createUserName',
+                    title : '创建人',
+                    sortable: true
+                },
+                {
+                    field : 'memo',
+                    title : '备注',
+                    sortable: true
+                },
+                /*{
+                    title: '操作',
+                    align: 'center',
+                    events: {
+                        'click .detail': function (e, value, rowData, index) {
+                            var id = rowData.billId;
+
+                            var _url =$.table._option.detailUrl;
+                            localStorage.setItem(_url,id.toString());
+                            $.modal.openFull("详情",_url);
+                        },
+                        'click .edit': function (e, value, rowData, index) {
+                            $.operate.edit(rowData.billId)
+
+                        },
+                        'click .delete': function (e, value, rowData, index) {
+                            $.operate.remove(rowData.billId)
+
+
+                        }
+                    },
+                    formatter: function(value, row, index) {
+                        var actions = [];
+                        actions.push('<a class="btn   btn-xs  detail"><i class="fa fa-remove"></i>查看</a>');
+                        actions.push('<a class="btn btn-success btn-xs edit "><i class="fa fa-edit"></i>编辑</a> ');
+                        actions.push('<a class="btn btn-danger btn-xs  delete"><i class="fa fa-remove"></i>删除</a>');
+                        return actions.join('');
+                    }
+                }*/
+            ]
+        };
+        $.table.init(options);
+    });
+    var app = new Vue({
+        el: '#myVue',
+        data: {
+            operator: '',
+            card: '',
+            loginPerson: '',
+            loginPersonCardNo: '',
+            taskStartTime: '',
+
+        },
+        methods: {
+            manualCancel: function () {
+                let that = this;
+                $.modal.confirm("是否确定手动完成此任务？", function () {
+                    var rows = $('#bootstrap-table').bootstrapTable('getAllSelections');
+                    // if (rows[0].type !== 12) {
+                    //     $.modal.msgWarning("请勾选点数任务，勿勾选其他任务！")
+                    //     return false;
+                    // }
+                    $.modal.loading("处理中，请稍等");
+                    var list = {
+                        billOutDetailId: rows[0].billOutDetailId,
+                        loginPersonCardNo: that.loginPersonCardNo,
+                    };
+                    $.ajax({
+                        type: "post",
+                        url: "/out/billOutMaster/manualCancel",
+                        data: JSON.stringify(list),
+                        dataType: "json",
+                        contentType: "application/json;charset-UTF-8",
+                        /*async: false,*/
+                        error: function (data) {
+                            $.modal.msgError("系统错误，请联系管理员");
+                            $.modal.closeLoading();
+                        },
+                        success: function (data) {
+                            $.modal.closeLoading();
+                            if (data.code == 200) {
+                                $.table.refresh();
+                                $.modal.msgSuccess("处理成功!");
+                            } else {
+                                $.modal.msgError(data.msg);
+                            }
+                        }
+                    });
+                });
+            },
+            isNull: function (param) {
+                if (param === null || param === undefined || param === '') {
+                    return true;
+                }
+                return false;
+            },
+            //刷卡验证
+            qwe: function () {
+                let that = this;
+                if (that.card == '' || that.card == null) {
+                    alert("请刷卡登陆！");
+                    return false
+                }
+                let card = {
+                    card: that.card,
+                }
+                $.ajax({
+                    type: "post",
+                    url: "/system/operator/findByCard",
+                    data: JSON.stringify(card),
+                    dataType: "json",
+                    contentType: "application/json;charset-UTF-8",
+                    async: false,
+                    error: function (data) {
+                        $.modal.msgError("系统错误");
+                    },
+                    success: function (data) {
+                        if (data.code === 200) {
+                            that.taskStartTime = that.date;
+                            that.loginPerson = data.data.operatorName + data.data.empNo;
+                            that.loginPersonCardNo = data.data.operatorCard;
+                            that.card = '';
+                            that.operator = data.data;
+                            document.querySelector('.popContainer').style.display = 'none';
+                        } else {
+                            $.modal.msgError("系统无此账户,请联系管理员！");
+                        }
+                    },
+                });
+            },
+        },
+        created: function () {
+        },
+        mounted: function () {
+            $('#card').focus();
+        }
+    })
+</script>
+</body>
+</html>

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('入库记录')"/>
+
+</head>
+<body class="gray-bg">
+<div id="myVue">
+    <div class="container-div" onmousemove="parent.updateTimeOut()">
+        <div class="row">
+            <div class="col-sm-12 search-collapse">
+                <form id="formId">
+                    <div class="select-list">
+                        <ul>
+                            <li>
+                                订单：<input type="text" name="segment"/>
+                            </li>
+                            <li>
+                                料号：<input type="text" name="itemCode"/>
+                            </li>
+                            <li>
+                                批次：<input type="text" name="batch"/>
+                            </li>
+                            <li class="select-time">
+                                <label>入库时间： </label>
+                                <input type="text" class="time-input" id="startTime" placeholder="开始时间" name="startTime"/>
+                                <span>-</span>
+                                <input type="text" class="time-input" id="endTime" placeholder="结束时间" name="endTime"/>
+                            </li>
+<!--                            <li>-->
+<!--                                类型：-->
+<!--                                <select name="type">-->
+<!--                                    <option value="-1"></option>-->
+<!--                                    <option value="1">采购接收接口</option>-->
+<!--                                    <option value="2">交货接口</option>-->
+<!--                                    <option value="3">WIP工单发料接口</option>-->
+<!--                                    <option value="4">账户别名事务处理接口</option>-->
+<!--                                    <option value="5">子库存转移接口</option>-->
+<!--                                </select>-->
+<!--                            </li>-->
+<!--                            <li>-->
+<!--                                状态：-->
+<!--                                <select name="state">-->
+<!--                                    <option value="-1"></option>-->
+<!--                                    <option value="1">调用成功</option>-->
+<!--                                    <option value="2">失败需处理</option>-->
+<!--                                    <option value="3">失败无需处理</option>-->
+<!--                                    <option value="4">EBS处理中</option>-->
+<!--                                    <option value="5">已处理</option>-->
+<!--                                </select>-->
+<!--                            </li>-->
+                            <li>
+                                <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i
+                                        class="fa fa-search"></i>&nbsp;搜索</a>
+                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i
+                                        class="fa fa-refresh"></i>&nbsp;重置</a>
+                            </li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+
+            <div class="btn-group-sm" id="toolbar" role="group">
+                <a class="btn btn-danger btn-edit disabled"  @click="returnQuantity()" shiro:hasPermission="billInRecord:return">
+                    <i class="glyphicon glyphicon-share-alt" ></i> WMS订单数据退回
+                </a>
+            </div>
+            <div class="col-sm-12 select-table table-striped">
+                <table id="bootstrap-table" data-mobile-responsive="true" style="white-space:nowrap"></table>
+            </div>
+        </div>
+    </div>
+    <div th:include="include :: footer"></div>
+</div>
+<script th:inline="javascript">
+    var editFlag = [[${@permission.hasPermi('in:boxItem:edit')}]];
+    var prefix = ctx + "billInRecord";
+
+    function addBill() {
+        var _url = prefix + "/add";
+        $.modal.openFull("新增", _url);
+    }
+
+    $(function () {
+        var options = {
+            url: prefix + "/findList",
+            createUrl: prefix + "/add",
+            updateUrl: prefix + "/edit/{id}",
+            removeUrl: prefix + "/remove",
+            exportUrl: prefix + "/export",
+            detailUrl: prefix + "/detail",
+            modalName: "入库记录",
+            showExport: false,
+            columns: [
+                {
+                    checkbox: true
+                },
+                {
+                    field : 'billInRecordId',
+                    title : 'id',
+                    visible: true
+                },
+                {
+                    field: 'segment',
+                    title: '订单号',
+                    sortable: true
+                },
+                {
+                    field: 'itemCode',
+                    title: '料号',
+                    sortable: true
+                },
+                {
+                    field: 'itemName',
+                    title: '物料描述',
+                    sortable: true
+                },
+                {
+                    field: 'orderQuantity',
+                    title: '订单数量',
+                    sortable: true
+                },
+                {
+                    field: 'batch',
+                    title: '批次',
+                    sortable: true
+                },
+                {
+                    field: 'acceptQuantity',
+                    title: '接收数量',
+                    sortable: true
+                },
+                {
+                    field: 'boxCode',
+                    title: '箱号',
+                    sortable: true
+                },
+                {
+                    field: 'state',
+                    title: '状态',
+                    sortable: true,
+                    formatter: function (value, row, index) {
+                        if(value === 1){
+                            return "已录入";
+                        }else if(value === 3){
+                            return "已接收";
+                        }else if(value === 4){
+                            return "已退回";
+                        }
+                    }
+                },
+                {
+                    field: 'pd',
+                    title: '生产日期',
+                    sortable: true
+                },
+                {
+                    field: 'exp',
+                    title: '失效日期',
+                    sortable: true
+                },
+                {
+                    field: 'vendorCode',
+                    title: '供应商编码',
+                    sortable: true
+                },
+                {
+                    field: 'vendorName',
+                    title: '供应商',
+                    sortable: true
+                },
+                {
+                    field: 'expectedArrivalDate',
+                    title: '预计交货日期',
+                    sortable: true
+                },
+                {
+                    field: 'lineNum',
+                    title: '订单行号',
+                    sortable: true
+                },
+                {
+                    field: 'barCode',
+                    title: '二维码条码信息',
+                    sortable: true
+                },
+                {
+                    field: 'acceptTime',
+                    title: '接收日期',
+                    sortable: true
+                },
+            ]
+        };
+        $.table.init(options);
+    });
+    var app = new Vue({
+        el: '#myVue',
+        data: {
+            operator:'',
+            card: '',
+            loginPerson: '',
+            loginPersonCardNo: '',
+            taskStartTime: '',
+
+        },
+        methods: {
+            //退出
+            returnQuantity:function(){
+                let that = this;
+                var rows = $('#bootstrap-table').bootstrapTable('getAllSelections');
+                $.modal.confirm("确定退回此条数据吗？",function(){
+                    if(rows.length>1){
+                        $.modal.msgError("请勾选单条！")
+                        return false;
+                    }
+                    if(rows[0].state !== 1){
+                        $.modal.msgError("只能选择已录入数据");
+                        return false;
+                    }
+                    $.modal.loading("处理中，请稍后");
+                    $.ajax({
+                        type: "post",
+                        url: "/billInRecord/returnQuantity",
+                        data: JSON.stringify({billInRecordId:rows[0].billInRecordId}),
+                        dataType: "json",
+                        contentType: "application/json;charset-UTF-8",
+                        async: false,
+                        error: function (data) {
+                            $.modal.msgError("系统错误");
+                            $.modal.closeLoading();
+                        },
+                        success: function (data) {
+                            $.modal.closeLoading();
+                            if (data.code === 200) {
+                                $.table.refresh();
+                                $.modal.msgSuccess("退回成功");
+                            } else {
+                                $.modal.msgError(data.data);
+                            }
+                        },
+                    });
+                });
+            },
+        },
+        created:function(){
+            let that = this;
+        },
+        mounted: function () {
+            $('#card').focus();
+        }
+    })
+</script>
+</body>
+</html>

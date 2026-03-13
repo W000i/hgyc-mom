@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('WMS与MES交互记录')"/>
+
+</head>
+<body class="gray-bg">
+<div id="myVue">
+    <div class="container-div" onmousemove="parent.updateTimeOut()">
+        <div class="row">
+            <div class="col-sm-12 search-collapse">
+                <form id="formId">
+                    <div class="select-list">
+                        <ul>
+                            <li>
+                                接口类型：
+                                <select name="methodName">
+                                    <option value=""></option>
+                                    <option value="DownWipToStock">下发计划工单到立体库</option>
+                                    <option value="StockWipOutReq">立体库出料请求</option>
+                                    <option value="EmptyShelfInReq">立体库呼叫空载具请求</option>
+                                    <option value="StockTakeShelf">立体库拿取空载具成功</option>
+                                    <option value="EmptyShelfArrive">空载具到达立体库入料口</option>
+                                </select>
+                            </li>
+                            <li>
+                                状态：
+                                <select name="errorCode">
+                                    <option value=""></option>
+                                    <option value="0">调用成功</option>
+                                    <option value="-1">调用失败</option>
+                                </select>
+                            </li>
+                            <li>
+                                <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i
+                                        class="fa fa-search"></i>&nbsp;搜索</a>
+                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i
+                                        class="fa fa-refresh"></i>&nbsp;重置</a>
+                            </li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+            <div class="btn-group-sm" id="toolbar" role="group">
+                <a class="btn btn-danger" @click="deleteByIds()" shiro:hasPermission="callAgv:delete">
+                    <i class="fa fa-remove"></i> 删除30天前失败记录
+                </a>
+            </div>
+            <div class="col-sm-12 select-table table-striped">
+                <table id="bootstrap-table" data-mobile-responsive="true" style="white-space:nowrap"></table>
+            </div>
+        </div>
+    </div>
+    <div th:include="include :: footer"></div>
+</div>
+<script th:inline="javascript">
+
+    var prefix = ctx + "callAgv";
+
+    $(function () {
+        var options = {
+            url: prefix + "/findList",
+            createUrl: prefix + "/add",
+            updateUrl: prefix + "/edit/{id}",
+            removeUrl: prefix + "/remove",
+            exportUrl: prefix + "/export",
+            detailUrl: prefix + "/detail",
+            modalName: "WMS与MES交互记录",
+            showExport: false,
+            columns: [
+                /*{
+                    checkbox: true
+                },*/
+                {
+                    field: 'id',
+                    title: '自增长Id',
+                    sortable: true
+                },
+                {
+                    field: 'methodName',
+                    title: '方法名',
+                    sortable: true
+                },
+               {
+                    field: 'wipEntity',
+                    title: '工单ID',
+                    sortable: true
+                },
+                {
+                    field: 'itemCode',
+                    title: '料号',
+                    sortable: true
+                },
+                {
+                    field: 'quantity',
+                    title: '数量',
+                    sortable: true
+                },
+                {
+                    field: 'taskCode',
+                    title: '任务编号',
+                    visible: true
+                },
+                {
+                    field: 'errorCode',
+                    title: '状态',
+                    sortable: true,
+                    formatter:function (value,row,index) {
+                        if (value === "-1") {
+                            return "失败"
+                        }
+                        if (value === "0") {
+                            return "成功"
+                        }
+                    }
+                },
+                {
+                    field: 'errorMsg',
+                    title: '接口信息详情',
+                    visible: true
+                },
+                {
+                    field: 'createTime',
+                    title: '时间',
+                    sortable: true
+                },
+            ]
+        };
+        $.table.init(options);
+    });
+    var app = new Vue({
+        el: '#myVue',
+        data: {
+            operator:'',
+            card: '',
+            loginPerson: '',
+            loginPersonCardNo: '',
+            taskStartTime: '',
+
+        },
+        methods: {
+            //退出
+            refresh:function(){
+                $.modal.confirm("确定刷新吗？",function(){
+                    $.operate.get("requestId/refresh");
+                });
+            },
+//批量删除报警信息
+            deleteByIds:function(){
+                let that = this;
+                $.modal.confirm("是否确定删除一个月前的失败记录？",function(){
+                    $.modal.loading("处理中，请稍等");
+                    $.ajax({
+                        type: "post",
+                        url: "/callAgv/remove",
+                        data: JSON.stringify({}),
+                        dataType: "json",
+                        contentType: "application/json;charset-UTF-8",
+                        /*async: false,*/
+                        error: function (data) {
+                            $.modal.msgError("系统错误，请联系管理员");
+                            $.modal.closeLoading();
+                        },
+                        success: function (data) {
+                            $.modal.closeLoading();
+                            if (data.code == 200) {
+                                $.table.refresh();
+                                $.modal.msgSuccess("删除成功!");
+                            } else {
+                                $.modal.msgError(data.msg);
+                            }
+                        }
+                    });
+                });
+            },
+            //刷卡验证
+            /*qwe: function () {
+                let that = this;
+                if (that.card == '' || that.card == null) {
+                    alert("请刷卡登陆！");
+                    return false
+                }
+                let card = {
+                    card: that.card,
+                }
+                $.ajax({
+                    type: "post",
+                    url: "/system/operator/findByCard",
+                    data: JSON.stringify(card),
+                    dataType: "json",
+                    contentType: "application/json;charset-UTF-8",
+                    async: false,
+                    error: function (data) {
+                        $.modal.msgError("系统错误");
+                    },
+                    success: function (data) {
+                        if (data.code === 200) {
+                            that.taskStartTime = that.date;
+                            that.loginPerson = data.data.operatorName + data.data.empNo;
+                            that.loginPersonCardNo = data.data.operatorCard;
+                            that.card = '';
+                            that.operator = data.data;
+                            document.querySelector('.popContainer').style.display = 'none';
+                        } else {
+                            $.modal.msgError("系统无此账户,请联系管理员！");
+                        }
+                    },
+                });
+            },*/
+
+        },
+        created:function(){
+            let that = this;
+            /*$.ajax({
+                type: "post",
+                url: "/accountAlias/findAccountAliasList",
+                data: JSON.stringify(),
+                dataType: "json",
+                contentType: "application/json;charset-UTF-8",
+                async: false,
+                error: function (data) {
+                    $.modal.msgError("系统错误");
+                },
+                success: function (data) {
+
+                },
+            });*/
+        },
+        mounted: function () {
+            $('#card').focus();
+        }
+    })
+</script>
+</body>
+</html>

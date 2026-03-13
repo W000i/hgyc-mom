@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('手动出库')"/>
+    <style type="text/css">
+        #guapi {
+            border: 1px solid gray;
+            box-shadow: 2px 4px 6px gray;
+            border-radius: 10px;
+        }
+
+        .guapi {
+            border: 1px solid gray;
+            margin: 20px;
+            border-radius: 10px;
+        }
+
+        #inside {
+            margin: 20px
+        }
+
+        #billin {
+            font-size: 30px;
+            color: #4499FF
+        }
+
+        .div-inline1 {
+            display: inline-block;
+            margin: 30px;
+            width: 1000px
+        }
+
+        .div-inline {
+            display: inline-block;
+            margin: 30px;
+        }
+
+        .div-inline2 {
+            display: inline-block;
+            margin: 10px;
+        }
+
+        #inline-font {
+            margin-right: 5px;
+            font-size: 30px;
+        }
+
+        .element_container {
+            width: 200px;
+            display: inline-block;
+        }
+
+        .buttonFont {
+            font-size: 40px;
+            width: 66px;
+            height: 35px;
+            vertical-align: middle;
+            text-align: center;
+            color: white;
+        }
+
+        #buttonStyle {
+            height: 80px;
+            width: 200px;
+            background: #1E90FF;
+            border-radius: 15px;
+            text-align: center;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .buttonFont1 {
+            font-size: 35px;
+            width: 55px;
+            height: 28px;
+            vertical-align: middle;
+            text-align: center;
+            color: white;
+        }
+
+        .buttonFont1 {
+            font-size: 35px;
+            width: 55px;
+            height: 28px;
+            vertical-align: middle;
+            text-align: center;
+            color: white;
+        }
+
+        #buttonStyle1 {
+            height: 60px;
+            width: 170px;
+            background: #999;
+            border-radius: 15px;
+            text-align: center;
+            display: block;
+            margin: 0 auto;
+        }
+
+        #buttonStyle2 {
+            height: 200px;
+            width: 300px;
+            background: #D3D3D3;
+            border-radius: 15px;
+            text-align: center;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .div-inline-two: {
+            margin-top: 20px;
+        }
+
+        .div-inline-three: {
+            margin-top: 20px;
+        }
+
+        .el-button--primary {
+            color: #FFF;
+            background-color: #409EFF;
+            border-color: #409EFF00;
+        }
+
+        div.popContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="gray-bg">
+<div id="myVue">
+    <div class="container-div" onmousemove="parent.updateTimeOut()">
+        <div class="row">
+            <div class="col-sm-12 search-collapse">
+                <form id="formId">
+                    <div class="select-list">
+                        <ul>
+                            <li>
+                                工单号：<input type="text" name="billNo"/>
+                            </li>
+                            <li>
+                                <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i
+                                        class="fa fa-search"></i>&nbsp;搜索</a>
+                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i
+                                        class="fa fa-refresh"></i>&nbsp;重置</a>
+                            </li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+
+            <div class="btn-group-sm" id="toolbar" role="group">
+                <a class="btn btn-primary btn-edit disabled" shiro:hasPermission="workerOrder:manualOut"
+                   @click="showManual()" style="background-color: #598dff;border-color: #598dff;">
+                    <i class="glyphicon glyphicon-arrow-left"></i> 手动出库
+                </a>
+                <a class="btn btn-primary btn-del disabled" @click="manualCancel(1)" shiro:hasPermission="workerOrder:workerOrderCancel"
+                   style="background-color: #ff0e15;border-color: #ff0e15;">
+                    <i class="glyphicon glyphicon-remove-sign"></i> 工单取消
+                </a>
+                <a class="btn btn-primary" @click="adjustTime()" shiro:hasPermission="workerOrder:adjustTime"
+                   style="background-color: #49ff4f;border-color: #49ff4f;">
+                    <i class="glyphicon glyphicon-remove-sign"></i> 待发工单时间调整
+                </a>
+                <a class="btn btn-primary btn-del disabled" @click="manualCancel(2)" shiro:hasPermission="workerOrder:workerOrderCancel"
+                   style="background-color: #ff0e15;border-color: #ff0e15;">
+                    <i class="glyphicon glyphicon-remove-sign"></i> 工单取消重新下发
+                </a>
+            </div>
+            <div class="col-sm-12 select-table table-striped">
+                <table id="bootstrap-table" data-mobile-responsive="true" style="white-space:nowrap"></table>
+            </div>
+        </div>
+    </div>
+    <!--手动出库-->
+    <el-dialog title="手动出库" :visible.sync="manualOutDialogVisible" width="35%">
+        <el-form :model="manualOut" label-width="120px">
+            <el-form-item label="箱号" >
+                <el-input v-model="manualOut.boxCode" style="width: 80%"></el-input>
+            </el-form-item>
+            <el-form-item label="出库数量" >
+                <el-input v-model="manualOut.quantity" style="width: 80%"></el-input>
+            </el-form-item>
+            <el-form-item label="可出数量">
+                <el-input v-model="manualOut.canOutQuantity" disabled="true" style="width: 80%"></el-input>
+            </el-form-item>
+            <el-form-item label="待出数量">
+                <el-input v-model="manualOut.waitQuantity"  disabled="true" style="width: 80%"></el-input>
+            </el-form-item>
+        </el-form>
+
+        <span slot="footer" class="dialog-footer">
+             <el-button @click="backWareHouseDialogVisible = false">取 消</el-button>
+             <el-button type="primary" @click="MESworkerOrderOut()" v-if="buttonShow == 1">出 库</el-button>
+             <el-button type="primary" @click="backWare()">出库完成</el-button>
+        </span>
+    </el-dialog>
+
+    <!-- 刷卡验证 -->
+    <div class='popContainer'>
+        <div style="margin: 10px;width:400px;margin:0 auto;height: 160px;text-align:center;
+    background:white;margin-top:200px;border-radius: 10px;">
+            <div style="width:400px;height: 30px;margin-top:10px">
+                <span style="font-size:20px;margin-top:20px">登录</span>
+            </div>
+            <hr/>
+            <div style="margin-top:20px;">
+                <span id="inline-font">卡号:</span>
+                <div class="element_container" style="width:200px;height:50px;">
+                    <el-input placeholder="请输入卡号" @change="qwe" id="card" type="password" v-model="card"></el-input>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div th:include="include :: footer"></div>
+</div>
+<script th:inline="javascript">
+    var editFlag = [[${@permission.hasPermi('in:boxItem:edit')}]];
+    var removeFlag = [[${@permission.hasPermi('in:boxItem:remove')}]];
+    var prefix = ctx + "out/billOutMaster";
+
+    function addBill() {
+        var _url = prefix + "/add";
+        $.modal.openFull("新增", _url);
+    }
+
+    $(function () {
+        var options = {
+            url: prefix + "/findList1",
+            createUrl: prefix + "/add",
+            updateUrl: prefix + "/edit/{id}",
+            removeUrl: prefix + "/remove",
+            exportUrl: prefix + "/export",
+            detailUrl: prefix + "/detail",
+            modalName: "库存报表",
+            showExport: false,
+            columns: [
+                {
+                    checkbox: true
+                },
+                {
+                    field: 'billNo',
+                    title: '工单ID',
+                    sortable: true
+                },
+                {
+                    field: 'itemCode',
+                    title: '料号',
+                    sortable: true
+                },
+                {
+                    field: 'quantity',
+                    title: '需求数量',
+                    visible: true
+                },
+                {
+                    field: 'alreadyOutQuantity',
+                    title: '已发数量',
+                    sortable: true
+                },
+                {
+                    field: 'waitOut',
+                    title: '待发',
+                    visible: true,
+                    formatter:function(value,row,index){
+                        return row.quantity-row.alreadyOutQuantity;
+                    }
+                },
+                {
+                    field: 'alreadyOutQuantity',
+                    title: '实发数量',
+                    sortable: true
+                },
+                {
+                    field: 'state',
+                    title: '实发数量',
+                    sortable: true,
+                    formatter:function(value,row,index){
+                        if(value === 0){
+                            return "未下发";
+                        }
+                        else if(value === 1){
+                            return "已下发";
+                        }
+                    }
+                },
+                {
+                    field: 'createTime',
+                    title: '时间',
+                    sortable: true
+                },
+            ]
+        };
+        $.table.init(options);
+    });
+    var app = new Vue({
+        el: '#myVue',
+        data: {
+            operator:'',
+            card: '',
+            loginPerson: '',
+            loginPersonCardNo: '',
+            taskStartTime: '',
+
+            manualOutDialogVisible:false,
+            buttonShow: 1,
+            manualOut: {
+                boxCode: '',
+                quantity: '',
+                canOutQuantity: '',
+                waitQuantity: '',
+            },
+            billNo:'',
+        },
+        methods: {
+            //退出
+            /*exit:function(){
+                let that = this;
+                that.clearParams();
+                that.loginPerson='';
+                that.loginPersonCardNo='';
+                document.querySelector('.popContainer').style.display = 'block';
+                document.querySelector('body').style.overflow = 'hidden';
+                $('#card').focus();
+            },*/
+            showManual:function(){
+                let that = this;
+                let rows = $('#bootstrap-table').bootstrapTable('getAllSelections');
+                that.manualOut.waitQuantity = rows[0].quantity-rows[0].alreadyOutQuantity;
+                that.manualOutDialogVisible = true;
+            },
+            //调整时间
+            adjustTime: function () {
+                let that = this;
+                $.modal.confirm("是否确定因特殊原因调整工单时间？", function () {
+                    $.modal.loading("处理中，请稍等");
+                    $.ajax({
+                        type: "get",
+                        url: "/out/billOutMaster/adjustTime",
+                        data: {},
+                        dataType: "json",
+                        contentType: "application/json;charset-UTF-8",
+                        /*async: false,*/
+                        error: function (data) {
+                            $.modal.msgError("系统错误，请联系管理员");
+                            $.modal.closeLoading();
+                        },
+                        success: function (data) {
+                            $.modal.closeLoading();
+                            if (data.code == 200) {
+                                $.table.refresh();
+                                $.modal.msgSuccess("处理成功!");
+                            } else {
+                                $.modal.msgError(data.msg);
+                            }
+                        }
+                    });
+                });
+            },
+            // 取消工单
+            manualCancel: function (data) {
+                let that = this;
+                let msg = "";
+                if(data === 1){
+                    msg = "是否确定批量取消工单";
+                }else{
+                    msg = "是否确定批量取消工单并重新下发";
+                }
+                $.modal.confirm(msg+"？", function () {
+                    var rows = $('#bootstrap-table').bootstrapTable('getAllSelections');
+                    var ids = [];
+                    for (var j = 0; j < rows.length; j++) {
+                        ids.push(rows[j].billId);
+                    }
+                    $.modal.loading("处理中，请稍等");
+                    var list = {
+                        billIds: ids,
+                        loginPersonCardNo: that.loginPersonCardNo,
+                    };
+                    var url = "";
+                    if(data === 1){
+                        url = "/out/billOutMaster/manualCancel";
+                    }else{
+                        url = "/out/billOutMaster/manualCancelAgainIssue";
+                    }
+                    $.ajax({
+                        type: "post",
+                        url: url,
+                        data: JSON.stringify(list),
+                        dataType: "json",
+                        contentType: "application/json;charset-UTF-8",
+                        /*async: false,*/
+                        error: function (data) {
+                            $.modal.msgError("系统错误，请联系管理员");
+                            $.modal.closeLoading();
+                        },
+                        success: function (data) {
+                            $.modal.closeLoading();
+                            if (data.code == 200) {
+                                $.table.refresh();
+                                $.modal.msgSuccess("处理成功!");
+                            } else {
+                                $.modal.msgError(data.msg);
+                            }
+                        }
+                    });
+                });
+            },
+            //出筐
+            MESworkerOrderOut: function () {
+                let that = this;
+                let rows = $('#bootstrap-table').bootstrapTable('getAllSelections');
+                if(rows.length>1){
+                    $.modal.msgWarning("只能选择一条工单，请勿多选");
+                    return false;
+                }
+                that.manualOutDialogVisible = false;
+                $.modal.loading("处理中，请稍等");
+                let list = {
+                    itemCode: rows[0].itemCode,
+                    loginPersonCardNo: that.loginPersonCardNo,
+                    billOutDetailId: rows[0].billOutDetailId,
+                };
+                $.ajax({
+                    type: "post",
+                    url: "/out/billOutMaster/manualOut",
+                    data: JSON.stringify(list),
+                    dataType: "json",
+                    contentType: "application/json;charset-UTF-8",
+                    error: function (data) {
+                        $.modal.msgError("系统错误，请联系管理员");
+                        $.modal.closeLoading();
+                    },
+                    success: function (data) {
+                        $.modal.closeLoading();
+                        that.manualOutDialogVisible = true;
+                        if (data.code == 200) {
+                            that.manualOut.canOutQuantity = data.data;
+                            that.buttonShow = 0;
+                            that.billNo = rows[0].billNo;
+                            $.modal.msgSuccess("有可出框，已下发任务，请稍后!");
+                        } else {
+                            $.modal.msgError(data.msg);
+                        }
+                    }
+                });
+            },
+            //取完后入库
+            backWare: function () {
+                let that = this;
+                let rows = $('#bootstrap-table').bootstrapTable('getAllSelections');
+                if(rows.length>1){
+                    $.modal.msgWarning("只能选择一条工单，请勿多选");
+                    return false;
+                }
+                if(that.manualOut.boxCode === null || that.manualOut.boxCode === '' || that.manualOut.boxCode === undefined){
+                    $.modal.msgWarning("请扫描箱号！");
+                    return false;
+                }
+                if(that.manualOut.quantity === null || that.manualOut.quantity === '' || that.manualOut.quantity === undefined){
+                    $.modal.msgWarning("请输入领料数量！");
+                    return false;
+                }
+                if(that.manualOut.quantity>that.manualOut.canOutQuantity){
+                    $.modal.msgWarning("出库数量大于可出库数量,请重新输入！")
+                    return false;
+                }
+                if(that.manualOut.quantity>that.manualOut.waitQuantity){
+                    $.modal.msgWarning("出库数量大于待出数量,请重新输入！")
+                    return false;
+                }
+                if(that.billNo !== rows[0].billNo){
+                    $.modal.msgError("请选择工单"+that.billNo)
+                    return false;
+                }
+                let list = {
+                    boxCode: that.manualOut.boxCode,
+                    outQuantity: that.manualOut.quantity,
+                    loginPersonCardNo: that.loginPersonCardNo,
+                    billNo: rows[0].billNo,
+                }
+                that.manualOutDialogVisible = false;
+                $.modal.loading("处理中，请稍后");
+                $.ajax({
+                    cache: true,
+                    type: "POST",
+                    url: "/out/billOutMaster/backWareAfterManualOut",
+                    data: JSON.stringify(list),
+                    dataType: "json",
+                    contentType: "application/json;charset-UTF-8",
+                    error: function (request) {
+                        $.modal.closeLoading();
+                    },
+                    success: function (data) {
+                        $.modal.closeLoading();
+                        if (data.code == 200) {
+                            that.buttonShow = 1;
+                            that.manualOut.boxCode = '';
+                            that.manualOut.quantity = '';
+                            that.manualOut.canOutQuantity = '';
+                            that.manualOut.waitQuantity = '';
+                            that.billNo = '';
+                            $.modal.msgSuccess("出库完成，任务已下发");
+                        } else {
+                            that.manualOutDialogVisible = true;
+                            $.modal.msgError(data.msg)
+                        }
+                    }
+                });
+            },
+            //刷卡验证
+            qwe: function () {
+                let that = this;
+                if (that.card == '' || that.card == null) {
+                    // alert("请刷卡登陆！");
+                    $.modal.msgWarning("请刷卡登陆！");
+                    return false;
+                }
+                let card = {
+                    card: that.card,
+                }
+                $.modal.loading("验证中，请稍后");
+                $.ajax({
+                    type: "post",
+                    url: "/system/operator/findByCard",
+                    data: JSON.stringify(card),
+                    dataType: "json",
+                    contentType: "application/json;charset-UTF-8",
+                    /*async: false,*/
+                    error: function (data) {
+                        $.modal.msgError("系统错误");
+                        $.modal.closeLoading();
+                    },
+                    success: function (data) {
+                        $.modal.closeLoading();
+                        if (data.code === 200) {
+                            that.taskStartTime = that.date;
+                            that.loginPerson = data.data.operatorName + data.data.empNo;
+                            that.loginPersonCardNo = data.data.operatorCard;
+                            that.card = '';
+                            that.waitQuantity = '';
+                            that.operator = data.data;
+                            document.querySelector('.popContainer').style.display = 'none';
+                        } else {
+                            $.modal.msgError("系统无此账户,请联系管理员！");
+                        }
+                    },
+                });
+            },
+            //遮罩层
+            showOverlay(content) {
+                let that = this;
+                let text = '';
+                if (content) {
+                    text = content
+                }
+                that.loading = that.$loading({
+                    lock: true,
+                    text: text || '',
+                    spinner: 'el-icon-loading',
+                    background: 'rgba(0, 0, 0, 0.7)'
+                });
+            },
+            hideOverlay() {
+                let that = this;
+                if (that.loading) {
+                    that.loading.close();
+                }
+            },
+        },
+        created:function(){
+        },
+        mounted: function () {
+            $('#card').focus();
+        },
+    })
+</script>
+</body>
+</html>

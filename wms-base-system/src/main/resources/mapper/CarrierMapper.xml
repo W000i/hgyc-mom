@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.deer.wms.base.system.dao.CarrierMapper">
+  <resultMap id="BaseResultMap" type="com.deer.wms.base.system.model.Carrier">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="carrier_id" jdbcType="INTEGER" property="carrierId" />
+    <result column="carrier_code" jdbcType="VARCHAR" property="carrierCode" />
+    <result column="carrier_state" jdbcType="INTEGER" property="carrierState" />
+    <result column="carrier_task_id" jdbcType="VARCHAR" property="carrierTaskId" />
+    <result column="create_time" jdbcType="VARCHAR" property="createTime" />
+    <result column="code" jdbcType="VARCHAR" property="code" />
+    <result column="time" jdbcType="VARCHAR" property="time" />
+    <result column="bill_out_detail_id" jdbcType="INTEGER" property="billOutDetailId" />
+  </resultMap>
+
+  <resultMap id="Dto" type="com.deer.wms.base.system.model.CarrierDto" extends="BaseResultMap">
+    <result column="bill_no" jdbcType="VARCHAR" property="billNo"/>
+    <result column="already_out_quantity" jdbcType="INTEGER" property="alreadyOutQuantity"/>
+  </resultMap>
+
+  <select id="findFirstCarrier" resultMap="BaseResultMap">
+    select * from carrier
+    where 1=1
+    and carrier_state = 1
+    and bill_out_detail_id is null
+    order by carrier_id
+    limit 1
+  </select>
+
+  <select id="inValidate" parameterType="java.lang.String" resultMap="BaseResultMap">
+    select * from carrier
+    where carrier_code = #{carrierCode}
+    and carrier_state = 1
+  </select>
+
+  <select id="findList" parameterType="com.deer.wms.base.system.model.CarrierCriteria" resultMap="Dto">
+        select
+        car.carrier_id,
+        car.carrier_code,
+        car.carrier_state,
+        car.create_time,
+        car.time,
+        bod.already_out_quantity,
+        bom.bill_no
+        from carrier car
+        left join bill_out_detail bod on car.bill_out_detail_id = bod.bill_out_detail_id
+        left join bill_out_master bom on bom.bill_id = bod.bill_id
+        where 1=1
+        <if test="state != null and state != -1">
+            and car.carrier_state = #{state}
+        </if>
+        <if test="billNo != null and billNo != ''">
+          and bom.bill_no = #{billNo}
+        </if>
+      <if test="startTime != null and startTime != ''">
+          and date(car.create_time) &gt;= #{startTime}
+      </if>
+      <if test="endTime != null and endTime != ''">
+          and date(car.create_time) &lt;= #{endTime}
+      </if>
+        order by
+        carrier_state asc,
+        carrier_id desc
+  </select>
+</mapper>

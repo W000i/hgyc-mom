@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('库存管理')"/>
+    <style type="text/css">
+        #guapi {
+            border: 1px solid gray;
+            box-shadow: 2px 4px 6px gray;
+            border-radius: 10px;
+        }
+
+        .guapi {
+            border: 1px solid gray;
+            margin: 20px;
+            border-radius: 10px;
+        }
+
+        #inside {
+            margin: 20px
+        }
+
+        #billin {
+            font-size: 30px;
+            color: #4499FF
+        }
+
+        .div-inline1 {
+            display: inline-block;
+            margin: 30px;
+            width: 1000px
+        }
+
+        .div-inline {
+            display: inline-block;
+            margin: 30px;
+        }
+
+        .div-inline2 {
+            display: inline-block;
+            margin: 10px;
+        }
+
+        #inline-font {
+            margin-right: 5px;
+            font-size: 30px;
+        }
+
+        .element_container {
+            width: 200px;
+            display: inline-block;
+        }
+
+        .buttonFont {
+            font-size: 40px;
+            width: 66px;
+            height: 35px;
+            vertical-align: middle;
+            text-align: center;
+            color: white;
+        }
+
+        #buttonStyle {
+            height: 80px;
+            width: 200px;
+            background: #1E90FF;
+            border-radius: 15px;
+            text-align: center;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .buttonFont1 {
+            font-size: 35px;
+            width: 55px;
+            height: 28px;
+            vertical-align: middle;
+            text-align: center;
+            color: white;
+        }
+
+        .buttonFont1 {
+            font-size: 35px;
+            width: 55px;
+            height: 28px;
+            vertical-align: middle;
+            text-align: center;
+            color: white;
+        }
+
+        #buttonStyle1 {
+            height: 60px;
+            width: 170px;
+            background: #999;
+            border-radius: 15px;
+            text-align: center;
+            display: block;
+            margin: 0 auto;
+        }
+
+        #buttonStyle2 {
+            height: 200px;
+            width: 300px;
+            background: #D3D3D3;
+            border-radius: 15px;
+            text-align: center;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .div-inline-two {
+            margin-top: 20px;
+        }
+
+        .div-inline-three {
+            margin-top: 20px;
+        }
+
+        .el-button--primary {
+            color: #FFF;
+            background-color: #409EFF;
+            border-color: #409EFF00;
+        }
+
+        div.popContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="gray-bg">
+<div id="myVue">
+    <div class="container-div" onmousemove="parent.updateTimeOut()">
+        <div class="row">
+            <div class="col-sm-12 search-collapse">
+                <form id="formId">
+                    <div class="select-list">
+                        <ul>
+                            <li>
+                                箱号：<input type="text" name="boxCode"/>
+                            </li>
+                            <li>
+                                物料编码：<input type="text" name="itemCode"/>
+                            </li>
+                            <li>
+                                批次：<input type="text" name="batch"/>
+                            </li>
+                            <li>
+                                供应商编码：<input type="text" name="supplierCode"/>
+                            </li>
+                            <li>
+                                托盘状态：
+                                <select name="boxState">
+                                    <option value="-1">不限</option>
+                                    <option value="0">不在货位上</option>
+                                    <option value="1">在货位上</option>
+                                    <option value="2">任务执行中(锁定)</option>
+                                    <option value="3">出库至入库口任务执行中(锁定)</option>
+                                </select>
+                            </li>
+                            <li>
+                                子库存组织：
+                                <select name="subInventoryId">
+                                    <option value="-1"></option>
+                                    <option value="1">待检</option>
+                                    <option value="2">基板一厂板材库</option>
+                                    <option value="3">基板一厂板材过期库</option>
+                                    <option value="4">基板一厂板材延期库</option>
+                                    <option value="5">基板一厂不合格库</option>
+                                    <option value="6">基板一厂责任待确认材料库</option>
+                                    <option value="7">基板一厂预测备料库</option>
+                                </select>
+                            </li>
+                            <li>
+                                <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i
+                                        class="fa fa-search"></i>&nbsp;搜索</a>
+                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i
+                                        class="fa fa-refresh"></i>&nbsp;重置</a>
+                            </li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+
+            <div class="btn-group-sm" id="toolbar" role="group">
+                <!--  初始化不合格  -->
+                <a class="btn btn-danger btn-del btn-del disabled" v-if="operator.autoverifyPermission == 2"
+                   @click="initializeUnqualified()" style="background-color: red;border-color: red;">
+                    <i class="glyphicon glyphicon-remove"></i> 初始化不合格
+                </a>
+                <!-- 合框  -->
+                <a class="btn btn-danger btn-del btn-del disabled" v-if="operator.combinePermission == 2"
+                   @click="combineBox()" style="background-color: #409EFF;border-color: #409EFF;">
+                    <i class="glyphicon glyphicon-resize-small"></i> 合框
+                </a>
+                <a class="btn btn-danger btn-del btn-del disabled" v-if="operator.returnItemPermission == 2"
+                   @click="clearMoBlockQuantity()" style="background-color: #409EFF;border-color: #409EFF;">
+                    <i class="glyphicon glyphicon-resize-small"></i> 清空工单锁定数量
+                </a>
+                <!-- 退货 -->
+                <a class="btn btn-primary btn-edit disabled" v-if="operator.returnItemPermission == 2"
+                   @click="returnItemDialogVisible=true"
+                   style="background-color: #f9ff52;border-color: #f9ff52;color:black;">
+                    <i class="glyphicon glyphicon-share-alt"></i> 退货
+                </a>
+                <!-- 品质异常检验 -->
+                <a class="btn btn-primary btn-edit disabled" v-if="operator.qualityCheckPermission == 2"
+                   @click="qualityAbnormalDialogVisible=true" style="background-color: orange;border-color: orange;">
+                    <i class="glyphicon glyphicon-question-sign"></i> 品质异常确认
+                </a>
+                <!-- 报废 -->
+                <a class="btn btn-primary btn-edit disabled" @click="scrapOutDialogVisible=true"
+                   v-if="operator.scrapPermission == 2"
+                   style="background-color: purple;border-color: purple;">
+                    <i class="glyphicon glyphicon-remove-sign"></i> 报废
+                </a>
+                <!-- 子库转移 -->
+                <a class="btn btn-danger btn-del btn-del disabled" @click="subInventoryTransferDialogVisible=true"
+                   v-if="operator.transferWarehousePermission == 2"
+                   style="background-color: #00ceff;border-color: #00ceff;">
+                    <i class="glyphicon glyphicon-sort"></i> 子库转移
+                </a>
+                <!-- 非工单出库 -->
+                <a class="btn btn-primary btn-edit disabled" @click="nonWorkerOrderOutDialogVisible=true"
+                   v-if="operator.manualOutPermission == 2"
+                   style="background-color: deeppink;border-color: deeppink;">
+                    <i class="glyphicon glyphicon-log-out"></i> 非工单出库
+                </a>
+                <!-- 退库 -->
+                <a class="btn btn-primary btn-edit disabled" v-if="operator.backWarePermission == 2"
+                   @click="backWareHouseDialogVisible=true" style="background-color: #8030ff;border-color: #8030ff;">
+                    <i class="glyphicon glyphicon-log-in"></i> 退库
+                </a>
+                <!-- 预测备料 -->
+                <a class="btn btn-primary btn-edit disabled" @click="forecastLockDialogVisible=true"
+                   v-if="operator.transferWarehousePermission == 2"
+                   style="background-color: #4499ff;border-color: #4499ff;">
+                    <i class="glyphicon glyphicon-lock"></i> 预测备料
+                </a>
+                <!-- 添加流水号 -->
+                <a class="btn btn-primary btn-edit disabled" @click="flowCodeDialogVisible=true"
+                   style="background-color: #4499ff;border-color: #4499ff;">
+                    <i class="fa fa-plus"></i> 添加流程号
+                </a>
+                <!-- 盘点 -->
+                <a class="btn btn-info btn-edit disabled" @click="inventoryCheck()"
+                    v-if="operator.checkPermission == 2">
+                    <i class="fa fa-exchange"></i> 盘点
+                </a>
+                <a class="btn btn-info" onclick="$.table.importExcel()" v-if="operator.transferWarehousePermission == 2">
+                    <i class="fa fa-upload"></i> 导入延期工单
+                </a>
+            </div>
+            <div class="col-sm-12 select-table table-striped">
+                <table id="bootstrap-table" data-mobile-responsive="true" style="white-space:nowrap"></table>
+            </div>
+        </div>
+    </div>
+    <!-- 品质异常检验弹窗 -->
+    <el-dialog title="品质异常检验" :visible.sync="qualityAbnormalDialogVisible" width="35%">
+        <el-form :model="scrapItem" label-width="120px">
+            <el-form-item label="箱号">
+                <el-input style="width: 80%" id="checkBoxCode" v-model="qualityAbnormalCheckBoxCode"/>
+            </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+<!--                <el-button @click="qualityAbnormalDialogVisible = false">取 消</el-button>-->
+                <el-button type="primary" @click="qualityAbnormalCheck()">出 库</el-button>
+                <el-button type="primary" @click="billInAfterQualityAbnormalCheck()">确认完成</el-button>
+        </span>
+    </el-dialog>
+    <!-- 合框弹窗 -->
+    <el-dialog title="合框" :visible.sync="combineBoxInfoDialogVisible" width="35%">
+        <el-form :model="combineBoxInfo" label-width="120px">
+            <el-form-item label="箱号">
+                <el-input v-model="combineBoxInfo.combineToBoxCode" style="width: 80%"></el-input>
+            </el-form-item>
+            <el-form-item label="第一箱数量">
+                <el-input v-model="combineBoxInfo.combineQuantity" style="width: 80%"></el-input>
+            </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+               <!-- <el-button @click="backWareHouseDialogVisible = false">取 消</el-button>-->
+                <el-button type="primary" v-if="combineInNullButton" @click="billNullBox()">入空框</el-button>
+             <el-button type="primary" @click="afterCombineBoxBillIn()">合框完成</el-button>
+        </span>
+    </el-dialog>
+    <!-- 退货弹窗 -->
+    <el-dialog title="退货" :visible.sync="returnItemDialogVisible" width="35%">
+        <el-form :model="returnItemPop" label-width="120px">
+            <el-form-item label="箱号">
+                <el-input v-model="returnItemPop.returnBoxCode" style="width: 80%"></el-input>
+            </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+               <!-- <el-button @click="backWareHouseDialogVisible = false">取 消</el-button>-->
+                <el-button type="primary" @click="outBoxFromBoxCode(2)">出 库</el-button>
+             <el-button type="primary" @click="ensureReturnItem()">退货完成</el-button>
+        </span>
+    </el-dialog>
+    <!-- 报废 -->
+    <el-dialog title="报废出库" :visible.sync="scrapOutDialogVisible" width="35%">
+        <el-form :model="scrapItem" label-width="120px">
+            <el-form-item label="箱号">
+                <el-input style="width: 80%" v-model="scrapItem.boxCode"/>
+            </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+<!--                <el-button @click="scrapOutDialogVisible = false">取 消</el-button>-->
+                <el-button type="primary" @click="outBoxFromBoxCode(1)">出 库</el-button>
+                <el-button type="primary" @click="scrapInBox()">报废完成</el-button>
+        </span>
+    </el-dialog>
+    <!-- 非工单出库 -->
+    <el-dialog title="非工单出库" :visible.sync="nonWorkerOrderOutDialogVisible" width="35%">
+        <el-form :model="nonWorkerOrderOut" label-width="120px">
+            <el-form-item label="类型">
+                <el-select v-model="nonWorkerOrderOut.type" v-bind:disabled="type" style="width:80%;">
+                    <el-option v-bind:value="1" label="IQC库存数据扣减"></el-option>
+                    <el-option v-bind:value="2" label="账户别名"></el-option>
+                    <el-option v-bind:value="3" label="非工单出库"></el-option>
+                    <el-option v-bind:value="4" label="物料转卖"></el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item label="账户别名" v-if="nonWorkerOrderOut.type === 1 || nonWorkerOrderOut.type === 2">
+                <el-select style="width:80%;" v-model="nonWorkerOrderOut.dispositionId" v-bind:disabled="dispositionId">
+                    <el-option v-for="accountAlias in accountAliass" v-bind:value="accountAlias.dispositionId"
+                               v-bind:label="accountAlias.accountAlias"></el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item label="事务类型" v-if="nonWorkerOrderOut.type === 2">
+                <el-select v-model="nonWorkerOrderOut.transactionType" v-bind:disabled="transactionType" style="width:80%;">
+                    <el-option v-bind:value="31" label="事务处理发放"></el-option>
+                    <el-option v-bind:value="41" label="事务处理接收"></el-option>
+                </el-select>
+            </el-form-item>
+
+            <el-form-item label="数量">
+                <el-input style="width: 80%" v-model="nonWorkerOrderOut.outQuantity"/>
+            </el-form-item>
+            <el-form-item label="箱号"
+                          v-if="nonWorkerOrderOut.type === 2 || nonWorkerOrderOut.type === 3 ||nonWorkerOrderOut.type === 4">
+                <el-input style="width: 80%" v-model="nonWorkerOrderOut.boxCode"/>
+            </el-form-item>
+            <el-form-item label="可出数量"
+                          v-if="(nonWorkerOrderOut.type === 2 || nonWorkerOrderOut.type === 3 || nonWorkerOrderOut.type === 4) && nonWorkerOrderOut.transactionType !== 41">
+                <el-input v-model="nonWorkerOrderOut.surplusQuantity" style="width: 80%"
+                          v-bind:disabled="true"></el-input>
+            </el-form-item>
+        </el-form>
+
+        <span slot="footer" class="dialog-footer">
+<!--                <el-button @click="nonWorkerOrderOutDialogVisible = false">取 消</el-button>-->
+                <el-button type="primary" @click="nonWorkerOrderItemOutBox()"
+                           v-if="nonWorkerOrderOut.type !== 1">出 库</el-button>
+                <el-button type="primary" @click="nonWorkerOrderOutFinish()"
+                           v-if="nonWorkerOrderOut.type !== 1">返 库</el-button>
+            <el-button type="primary" @click="IQCout()" v-if="nonWorkerOrderOut.type === 1">确 认</el-button>
+        </span>
+    </el-dialog>
+    <!--子库转移模态框-->
+    <el-dialog title="子库转移" :visible.sync="subInventoryTransferDialogVisible" width="35%">
+        <el-form :model="subInventory" label-width="120px">
+            <el-form-item label="转移至子库存">
+                <el-select v-model="subInventory.toSubInventoryId" style="width:80%;">
+                    <el-option v-for="subInventory in subInventory.subInventorys"
+                               v-bind:value="subInventory.subInventoryId"
+                               v-bind:label="subInventory.subInventoryName"/>
+                </el-select>
+            </el-form-item>
+
+            <el-form-item label="转库原因"
+                          v-if="subInventory.toSubInventoryId === 2 || subInventory.toSubInventoryId === 5">
+                <el-select filterable allow-create v-model="subInventory.transferReason" style="width:80%;">
+                    <el-option v-for="transferReason in subInventory.transferReasons"
+                               v-bind:value="transferReason.transferReason"
+                               v-bind:label="transferReason.transferReason"/>
+                </el-select>
+            </el-form-item>
+            <el-form-item label="延期日期" v-if="subInventory.toSubInventoryId === 4">
+                <el-date-picker
+                        style="width:80%;"
+                        v-model="subInventory.postpone"
+                        type="date"
+                        format="yyyy 年 MM 月 dd 日"
+                        value-format="yyyy-MM-dd"
+                        placeholder="选择日期"
+                >
+                </el-date-picker>
+            </el-form-item>
+            <!--<el-form-item label="工单Id" v-if="subInventory.toSubInventoryId === 4 ">
+                <el-input v-model="subInventory.delayWorkerOrderId" style="width:60%"></el-input>
+            </el-form-item>-->
+        </el-form>
+
+        <span slot="footer" class="dialog-footer">
+<!--                <el-button @click="subInventoryTransferDialogVisible = false">取 消</el-button>-->
+                <el-button type="primary" @click="commitSubInventoryTransfer()">确 定</el-button>
+        </span>
+    </el-dialog>
+    <!--预测备料锁定或解锁库存模态框-->
+    <el-dialog title="预测备料" :visible.sync="forecastLockDialogVisible" width="35%">
+        <el-form :model="forecastLock" label-width="120px">
+            <el-form-item label="数量">
+                <el-input v-model="forecastLock.quantity" style="width: 80%;"></el-input>
+            </el-form-item>
+            <el-form-item label="操作类型">
+                <el-select v-model="forecastLock.lock" style="width: 80%;">
+                    <el-option v-bind:value="1" label="锁定"></el-option>
+                    <el-option v-bind:value="2" label="释放"></el-option>
+                </el-select>
+            </el-form-item>
+        </el-form>
+
+        <span slot="footer" class="dialog-footer">
+<!--                <el-button @click="forecastLockDialogVisible = false">取 消</el-button>-->
+                <el-button type="primary" @click="commitForecastLock()">确 定</el-button>
+        </span>
+    </el-dialog>
+    <!--退库-->
+    <el-dialog title="退库" :visible.sync="backWareHouseDialogVisible" width="35%">
+        <el-form :model="backWareHouse" label-width="120px">
+            <el-form-item label="数量">
+                <el-input v-model="backWareHouse.quantity" style="width: 80%"></el-input>
+            </el-form-item>
+            <el-form-item label="卡一">
+                <el-input v-model="backWareHouse.cardOne" style="width: 80%" type="password"></el-input>
+            </el-form-item>
+            <el-form-item label="箱号">
+                <el-input v-model="backWareHouse.boxCode" style="width: 80%"></el-input>
+            </el-form-item>
+        </el-form>
+
+        <span slot="footer" class="dialog-footer">
+               <!-- <el-button @click="backWareHouseDialogVisible = false">取 消</el-button>-->
+                <el-button type="primary" @click="backWareHouseOutBox()">出 库</el-button>
+             <el-button type="primary" @click="backWareHouseBoxIn()">退库完成</el-button>
+        </span>
+    </el-dialog>
+    <!-- 即将过期流水号 -->
+    <el-dialog title="过期流程编号" :visible.sync="flowCodeDialogVisible" width="35%">
+        <el-form :model="flowCodeParam" label-width="120px">
+            <el-form-item label="过期前子库" >
+                <el-select v-model="flowCodeParam.toSubInventoryId" style="width:80%;">
+                    <el-option v-for="subInventory in subInventory.subInventorys"
+                               v-bind:value="subInventory.subInventoryId"
+                               v-bind:label="subInventory.subInventoryName"/>
+                </el-select>
+            </el-form-item>
+
+            <el-form-item label="流程号" >
+                <el-input v-model="flowCodeParam.flowCode" style="width:80%;"></el-input>
+            </el-form-item>
+        </el-form>
+
+        <span slot="footer" class="dialog-footer">
+                <el-button type="primary" @click="commitFlowCode()">确 定</el-button>
+        </span>
+    </el-dialog>
+
+    <form id="importForm" enctype="multipart/form-data" class="mt20 mb10" style="display: none;">
+        <div class="col-xs-offset-1">
+            <input type="file" id="file" name="file"/>
+            <div class="mt10 pt5">
+                <input  type="hidden" v-model="loginPersonCardNo" name="loginPersonCardNo"  id="loginPersonCardNo" />
+                &nbsp;	<a onclick="$.table.importTemplate()" class="btn btn-default btn-xs"><i class="fa fa-file-excel-o"></i> 下载模板</a>
+            </div>
+            <font color="red" class="pull-left mt10">
+                提示：仅允许导入“xls”或“xlsx”格式文件！
+            </font>
+        </div>
+    </form>
+    <!-- 刷卡验证 -->
+    <div class='popContainer'>
+        <div style="margin: 10px;width:400px;margin:0 auto;height: 160px;text-align:center;
+    background:white;margin-top:200px;border-radius: 10px;">
+            <div style="width:400px;height: 30px;margin-top:10px">
+                <span style="font-size:20px;margin-top:20px">登录</span>
+            </div>
+            <hr/>
+            <div style="margin-top:20px;">
+                <span id="inline-font">卡号:</span>
+                <div class="element_container" style="width:200px;height:50px;">
+                    <el-input placeholder="请输入卡号" @change="qwe" id="card" type="password" v-model="card"></el-input>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div th:include="include :: footer"></div>
+</div>
+<script th:inline="javascript">
+    var editFlag = [[${@permission.hasPermi('in:boxItem:edit')}]];
+    var removeFlag = [[${@permission.hasPermi('in:boxItem:remove')}]];
+    var prefix = ctx + "in/boxItem";
+    var prefixTwo = ctx + "delayWorkerOrder";
+
+    function addBill() {
+        var _url = prefix + "/add";
+        $.modal.openFull("新增", _url);
+    }
+
+    $(function () {
+        var options = {
+            url: prefix + "/findList",
+            createUrl: prefix + "/add",
+            updateUrl: prefix + "/edit/{id}",
+            removeUrl: prefix + "/remove",
+            exportUrl: prefix + "/export",
+            detailUrl: prefix + "/detail",
+            importUrl: prefixTwo + "/importData",
+            importTemplateUrl: prefixTwo + "/importTemplate",
+            modalName: "库存管理",
+            showExport: false,
+            columns: [
+                {
+                    checkbox: true
+                },
+                {
+                    field: 'boxCode',
+                    title: '箱号',
+                    sortable: true
+                },
+                {
+                    field: 'itemCode',
+                    title: '物料编码',
+                    sortable: true
+                },
+                {
+                    field: 'itemName',
+                    title: '物料描述',
+                    visible: true
+                },
+
+                {
+                    field: 'batch',
+                    title: '批次',
+                    sortable: true
+                },
+                {
+                    field: 'quantity',
+                    title: '数量',
+                    sortable: true
+                },
+                {
+                    field: 'forecastStockQuantity',
+                    title: 'MES工单锁定数量',
+                    sortable: true
+                },
+                {
+                    field: 'lockQuantity',
+                    title: '预测备料锁定数量',
+                    sortable: true
+                },
+                /*{
+                    field: 'workerOrderNo',
+                    title: '延期物料管控工单号',
+                    sortable: true
+                },*/
+                {
+                    field: 'location',
+                    title: '当前位置',
+                    sortable: true
+                },
+                {
+                    field: 'maxPackQty',
+                    title: '单箱最大存储数量',
+                    sortable: true
+                },
+                {
+                    field: 'supplierCode',
+                    title: '供应商编码',
+                    sortable: true
+                },
+                {
+                    field: 'supplierName',
+                    title: '供应商',
+                    visible: true
+                },
+                {
+                    field: 'exp',
+                    title: '过期日期',
+                    sortable: true
+                },
+                {
+                    field: 'boxState',
+                    title: '托盘状态',
+                    sortable: true,
+                    formatter: function (value, row, index) {
+                        var actions = [];
+                        if (value == 0) {
+                            actions.push("<span style='display: inline-block;line-height: 30px;padding: 0 10px;border: 1px solid #d9ecff;color: #434647;background-color: #F7F8FC;'>不在货位上</span>");
+                        }
+                        if (value == 1) {
+                            actions.push("<span style='display: inline-block;line-height: 30px;padding: 0 10px;border: 1px solid #d9ecff;color: #409eff;background-color: #ecf5ff;'>在货位上</span>");
+                        }
+                        if (value === 2 || value === 5) {
+                            actions.push("<span style='display: inline-block;line-height: 30px;padding: 0 10px;border: 1px solid #d9ecff;color: #FF2D3E;background-color: #FFAD7E;'>任务执行中(锁定)</span>");
+                        }
+                        if (value == 3) {
+                            actions.push("<span style='display: inline-block;line-height: 30px;padding: 0 10px;border: 1px solid #d9ecff;color: #FF2D3E;background-color: #FFAD7E;'>出库至操作台任务执行中(锁定)</span>");
+                        }
+                        return actions.join('');
+                    }
+                },
+                {
+                    field: 'subInventoryId',
+                    title: '子库',
+                    sortable: true,
+                    formatter: function (value, row, index) {
+                        var actions = [];
+                        if (value === 1) {
+                            actions.push("<span style='display: inline-block;line-height: 30px;padding: 0 10px;border: 1px solid #d9ecff;color: #434647;background-color: #F7F8FC;'><!--待检-->" + row.subInventoryName + "</span>");
+                        }
+                        if (value === 2) {
+                            actions.push("<span style='display: inline-block;line-height: 30px;padding: 0 10px;border: 1px solid #d9ecff;color: #434647;background-color: #34ff3e;'><!--基板一厂板材库-->" + row.subInventoryName + "</span>");
+                        }
+                        if (value === 3) {
+                            actions.push("<span style='display: inline-block;line-height: 30px;padding: 0 10px;border: 1px solid #d9ecff;color: #434647;background-color: #ff30ed;'><!--基板一厂板材过期库-->" + row.subInventoryName + "</span>");
+                        }
+                        if (value === 4) {
+                            actions.push("" +
+                                "<span style='display: inline-block;line-height: 30px;padding: 0 10px;border: 1px solid #d9ecff;color: #434647;background-color: #fdff2d;'><!--基板一厂板材延期库-->" + row.subInventoryName + "</span>");
+                        }
+                        if (value === 5) {
+                            actions.push("<span style='display: inline-block;line-height: 30px;padding: 0 10px;border: 1px solid #d9ecff;color: #434647;background-color: #ff0e15;'><!--基板一厂不合格库-->" + row.subInventoryName + "</span>");
+                        }
+                        if (value === 6) {
+                            actions.push("<span style='display: inline-block;line-height: 30px;padding: 0 10px;border: 1px solid #d9ecff;color: #434647;background-color: #4499ff;'><!--基板一厂责任待确认材料库-->" + row.subInventoryName + "</span>");
+                        }
+                        if (value === 7) {
+                            actions.push("<span style='display: inline-block;line-height: 30px;padding: 0 10px;border: 1px solid #d9ecff;color: #434647;background-color: gray;'><!--基板一厂预测备料库-->" + row.subInventoryName + "</span>");
+                        }
+                        return actions.join('');
+                    }
+                },
+            ]
+        };
+        $.table.init(options);
+    });
+    var app = new Vue({
+        el: '#myVue',
+        data: {
+            operator: '',
+            card: '',
+            loginPerson: '',
+            loginPersonCardNo: '',
+            taskStartTime: '',
+            qualityAbnormalCheckBoxCode: '',
+            qualityAbnormalDialogVisible: false,
+
+            accountAliass: '',
+
+            scrapOutDialogVisible: false,
+            scrapItem: {
+                boxCode: '',
+            },
+
+            returnItemDialogVisible: false,
+            returnItemPop: {
+                returnBoxCode: '',
+            },
+
+            combineBoxInfoDialogVisible: false,
+            combineInNullButton:true,
+            combineBoxInfo: {
+                combineQuantity: '',
+                combineToBoxCode: ''
+            },
+
+            nonWorkerOrderOutDialogVisible: false,
+            type: false,
+            dispositionId: false,
+            transactionType: false,
+            nonWorkerOrderOut: {
+                type: '',
+                dispositionId: '',
+                outQuantity: '',
+                surplusQuantity: '',
+                boxCode: '',
+                transactionType: '',
+            },
+
+            subInventoryTransferDialogVisible: false,
+            subInventory: {
+                subInventorys: [],
+                toSubInventoryId: '',
+                transferReasons: [],
+                transferReason: '',
+                postpone: '',
+                delayWorkerOrderId: '',
+            },
+
+            forecastLockDialogVisible: false,
+            forecastLock: {
+                quantity: '',
+                lock: '',
+            },
+
+            backWareHouseDialogVisible: false,
+            backWareHouse: {
+                quantity: '',
+                boxCode: '',
+                cardOne: '',
+            },
+
+            flowCodeDialogVisible:false,
+            flowCodeParam:{
+                toSubInventoryId:'',
+                flowCode:'',
+            },
+        },
+        methods: {
+            //退出
+            /*exit:function(){
+                let that = this;
+                that.clearParams();
+                that.loginPerson='';
+                that.loginPersonCardNo='';
+                document.querySelector('.popContainer').style.display = 'block';
+                document.querySelector('body').style.overflow = 'hidden';
+                $('#card').focus();
+            },*/
+
+            inventoryCheck:function(){
+                let that = this;
+                var rows = $('#bootstrap-table').bootstrapTable('getAllSelections');
+                if (rows.length > 1) {
+                    $.modal.msgWarning("请勾选一箱物料！");
+                    return false;
+                }
+                $.modal.confirm("是否确定盘点？",function() {
+                    $.modal.loading("处理中，请稍后");
+                    var list = {
+                        boxCode: rows[0].boxCode,
+                        loginPersonCardNo: that.loginPersonCardNo,
+                    };
+                    $.ajax({
+                        type: "post",
+                        url: "/inventoryCheck/sendInventoryCheck",
+                        data: JSON.stringify(list),
+                        dataType: "json",
+                        contentType: "application/json;charset-UTF-8",
+                        /*async: true,*/
+                        error: function (data) {
+                            $.modal.msgError("系统错误，请联系管理员");
+                            $.modal.closeLoading();
+                        },
+                        success: function (data) {
+                            $.modal.closeLoading();
+                            if (data.code == 200) {
+                                $.table.refresh();
+                                $.modal.msgSuccess("任务下发成功，请等待!");
+                            } else {
+                                $.modal.msgError(data.msg);
+                            }
+                        }
+                    });
+                });
+            },
+            //退货 报废出指定箱（完后）
+            outBoxFromBoxCode: function (num) {
+                let that = this;
+                var rows = $('#bootstrap-table').bootstrapTable('getAllSelections');
+                if (rows.length > 1) {
+                    $.modal.msgWarning("请勾选一箱物料！");
+                    return false;
+                }
+                for (var i = 0; i < rows.length; i++) {
+                    if (rows[i].boxState !== 1) {
+                        $.modal.msgWarning("请选择在货位上的物料")
+                        return false;
+                    }
+                }
+                if(num === 1){
+                    that.scrapOutDialogVisible = false;
+                }else{
+                    that.returnItemDialogVisible = false;
+                }
+                $.modal.loading("处理中，请稍后");
+                var list = {
+                    boxCode: rows[0].boxCode,
+                    loginPersonCardNo: that.loginPersonCardNo,
+                }
+                $.ajax({
+                    type: "post",
+                    url: "/out/billOutDetail/returnItem",
+                    data: JSON.stringify(list),
+                    dataType: "json",
+                    contentType: "application/json;charset-UTF-8",
+                    /*async: true,*/
+                    error: function (data) {
+                        $.modal.msgError("系统错误，请联系管理员");
+                        $.modal.closeLoading();
+                    },
+                    success: function (data) {
+                        $.modal.closeLoading();
+                        if (data.code === 200) {
+                            if(num === 1){
+                                that.scrapOutDialogVisible = true;
+                            }else{
+                                that.returnItemDialogVisible = true;
+                            }
+                            $.table.refresh();
+                            $.modal.msgSuccess("任务下发成功")
+                        } else {
+                            if(num === 1){
+                                that.scrapOutDialogVisible = true;
+                            }else{
+                                that.returnItemDialogVisible = true;
+                            }
+                            $.modal.msgError(data.msg);
+                        }
+                    }
+                });
+            },
+            //入空框
+            billNullBox: function () {
+                let that = this;
+                if (that.isNull(that.combineBoxInfo.combineToBoxCode)) {
+                    $.modal.msgError("请扫描箱号！")
+                    return false;
+                }
+                let boxCode = that.combineBoxInfo.combineToBoxCode;
+                that.combineBoxInfoDialogVisible = false;
+                $.modal.loading("处理中，请稍后");
+                $.ajax({
+                    cache: true,
+                    type: "POST",
+                    url: "/in/taskInfo/inNullBox",
+                    data: {
+                        boxCode: boxCode,
+                    },
+                    /*async: true,*/
+                    error: function (request) {
+                        $.modal.closeLoading();
+                    },
+                    success: function (data) {
+                        $.modal.closeLoading();
+                        that.combineBoxInfoDialogVisible = true;
+                        if (data.code == 200) {
+                            that.combineInNullButton = false;
+                            that.combineBoxInfo.combineToBoxCode = "";
+                            $.modal.msgSuccess("任务下发成功，请稍后！")
+                        } else {
+                            $.modal.msgError(data.msg)
+                        }
+                    }
+                });
+            },
+            //初始化库存转不合格库（完成）
+            initializeUnqualified: function (data) {
+                let that = this;
+                var rows = $('#bootstrap-table').bootstrapTable('getAllSelections');
+                var ids = [];
+                $.modal.confirm("是否确认初始化入库合格物料转移至不合格库？",function() {
+                    for (var j = 0; j < rows.length; j++) {
+                        ids.push(rows[j].id);
+                        if (rows[j].boxState !== 1) {
+                            $.modal.msgWarning("请选择在货位上的物料")
+                            return false;
+                        }
+                        if (rows[j].subInventoryId === 5) {
+                            $.modal.msgWarning("已选箱中已在不合格子库中，请重新选择！");
+                            return false;
+                        }
+                    }
+                    $.modal.loading("处理中，请稍等");
+                    var list = {
+                        ids: ids,
+                        loginPersonCardNo: that.loginPersonCardNo,
+                    };
+                    $.ajax({
+                        type: "post",
+                        url: "/subinventoryTransferRecord/initializeUnqualified",
+                        data: JSON.stringify(list),
+                        dataType: "json",
+                        contentType: "application/json;charset-UTF-8",
+                        /*async: false,*/
+                        error: function (data) {
+                            $.modal.msgError("系统错误，请联系管理员");
+                            $.modal.closeLoading();
+                        },
+                        success: function (data) {
+                            $.modal.closeLoading();
+                            if (data.code == 200) {
+                                $.table.refresh();
+                                $.modal.msgSuccess("检验成功!");
+                            } else {
+                                $.modal.msgError(data.data);
+                            }
+                        }
+                    });
+                });
+            },
+
+            // 工单锁定数量置零
+            clearMoBlockQuantity: function () {
+                let that = this;
+                $.modal.confirm("是否确定清空锁定数量？",function() {
+                    var rows = $('#bootstrap-table').bootstrapTable('getAllSelections');
+                    if (rows.length < 1) {
+                        $.modal.msgError("请勾选！")
+                        return false;
+                    }
+                    var ids = [];
+                    for (var j = 0; j < rows.length; j++) {
+                        ids.push(rows[j].id);
+                    }
+
+                    $.modal.loading("处理中，请稍后");
+                    var list = {
+                        ids: ids,
+                        loginPersonCardNo: that.loginPersonCardNo,
+                    };
+                    $.ajax({
+                        type: "post",
+                        url: "/combineBoxRecord/clearMoBlockQuantity",
+                        data: JSON.stringify(list),
+                        dataType: "json",
+                        contentType: "application/json;charset-UTF-8",
+                        /*async: true,*/
+                        error: function (data) {
+                            $.modal.msgError("系统错误，请联系管理员");
+                            $.modal.closeLoading();
+                        },
+                        success: function (data) {
+                            $.modal.closeLoading();
+                            if (data.code == 200) {
+                                $.table.refresh();
+                            } else {
+                                $.modal.msgError(data.msg);
+                            }
+                        }
+                    });
+                });
+            },
+
+            //合框
+            combineBox: function () {
+                let that = this;
+                $.modal.confirm("是否确定合框？",function() {
+                    var rows = $('#bootstrap-table').bootstrapTable('getAllSelections');
+                    if (rows.length != 2) {
+                        $.modal.msgError("请勾选两箱进行合框！")
+                        return false;
+                    }
+                    var ids = [];
+                    for (var j = 0; j < rows.length; j++) {
+                        // boxId = boxId + " " + rows[j].id;
+                        ids.push(rows[j].id);
+                        if (rows[j].itemCode !== rows[0].itemCode) {
+                            $.modal.msgWarning("请选择相同物料")
+                            return false;
+                        }
+                    }
+                    $.modal.loading("处理中，请稍后");
+                    var list = {
+                        ids: ids,
+                        loginPersonCardNo: that.loginPersonCardNo,
+                    };
+                    $.ajax({
+                        type: "post",
+                        url: "/combineBoxRecord/combineBox",
+                        data: JSON.stringify(list),
+                        dataType: "json",
+                        contentType: "application/json;charset-UTF-8",
+                        /*async: true,*/
+                        error: function (data) {
+                            $.modal.msgError("系统错误，请联系管理员");
+                            $.modal.closeLoading();
+                        },
+                        success: function (data) {
+                            $.modal.closeLoading();
+                            if (data.code == 200) {
+                                $.table.refresh();
+                                $.modal.msgSuccess("任务下发成功，请等待!");
+                                that.combineBoxInfo.combineQuantity = data.data
+                                that.combineBoxInfoDialogVisible = true;
+                            } else {
+                                $.modal.msgError(data.msg);
+                            }
+                        }
+                    });
+                });
+            },
+            //合框后入库
+            afterCombineBoxBillIn: function () {
+                let that = this;
+                if (that.isNull(that.combineBoxInfo.combineToBoxCode)) {
+                    $.modal.msgError("请扫描箱号！");
+                    return false;
+                }
+                that.combineBoxInfoDialogVisible = false;
+                $.modal.loading("处理中，请稍后");
+                var list = {
+                    boxCode: that.combineBoxInfo.combineToBoxCode,
+                    quantity: that.combineBoxInfo.combineQuantity,
+                    loginPersonCardNo: that.loginPersonCardNo,
+                };
+                $.ajax({
+                    type: "post",
+                    url: "/combineBoxRecord/afterCombineBoxBillIn",
+                    data: JSON.stringify(list),
+                    dataType: "json",
+                    contentType: "application/json;charset-UTF-8",
+                    /*async: true,*/
+                    error: function (data) {
+                        $.modal.msgError("系统错误，请联系管理员");
+                        $.modal.closeLoading();
+                    },
+                    success: function (data) {
+                        $.modal.closeLoading();
+                        if (data.code == 200) {
+                            $.table.refresh();
+                            $.modal.msgSuccess("任务下发成功，请等待!");
+                            that.combineBoxInfo.combineToBoxCode = '';
+                            that.combineBoxInfo.combineQuantity = '';
+                            that.combineInNullButton=true;
+                        } else {
+                            that.combineBoxInfoDialogVisible = true;
+                            $.modal.msgError(data.msg);
+                        }
+                    }
+                });
+            },
+
+
+            //品质异常检验出库到入库口（检验无问题）(出半框)
+            qualityAbnormalCheck: function () {
+                let that = this;
+                var rows = $('#bootstrap-table').bootstrapTable('getAllSelections');
+                if (rows.length > 1) {
+                    $.modal.msgWarning("仅能勾选一箱，请勿多选");
+                    return false;
+                }
+                $.modal.loading("处理中，请稍后");
+                var list = {
+                    boxCode: rows[0].boxCode,
+                    loginPersonCardNo: that.loginPersonCardNo,
+                }
+                that.qualityAbnormalDialogVisible = false;
+                $.modal.loading("处理中，请稍后");
+                $.ajax({
+                    type: "post",
+                    url: "/in/boxItem/qualityAbnormalCheck",
+                    data: JSON.stringify(list),
+                    dataType: "json",
+                    contentType: "application/json;charset-UTF-8",
+                    /*async: true,*/
+                    error: function (data) {
+                        $.modal.msgError("系统错误，请联系管理员");
+                        $.modal.closeLoading();
+                    },
+                    success: function (data) {
+                        $.modal.closeLoading();
+                        if (data.code == 200) {
+                            that.qualityAbnormalDialogVisible = true;
+                            $.modal.loading("处理中，请稍后");
+                            $.modal.msgSuccess("任务下发成功！");
+                            $.table.refresh();
+                        } else {
+                            $.modal.msgError(data.msg);
+                        }
+                    }
+                });
+            },
+            //品质异常检验完成后入库（检验无问题）
+            billInAfterQualityAbnormalCheck: function () {
+                let that = this;
+                if (that.qualityAbnormalCheckBoxCode === null || that.qualityAbnormalCheckBoxCode === '' || that.qualityAbnormalCheckBoxCode === undefined) {
+                    $.modal.msgError("请扫描箱号！");
+                    return false;
+                }
+                that.qualityAbnormalDialogVisible = false;
+                $.modal.loading("处理中，请稍后");
+                var list = {
+                    boxCode: that.qualityAbnormalCheckBoxCode,
+                    loginPersonCardNo: that.loginPersonCardNo,
+                }
+                $.ajax({
+                    type: "post",
+                    url: "/in/boxItem/billInAfterQualityAbnormalCheck",
+                    data: JSON.stringify(list),
+                    dataType: "json",
+                    contentType: "application/json;charset-UTF-8",
+                    /*async: true,*/
+                    error: function (data) {
+                        $.modal.msgError("系统错误，请联系管理员");
+                        $.modal.closeLoading();
+                    },
+                    success: function (data) {
+                        $.modal.closeLoading();
+                        if (data.code == 200) {
+                            $.modal.msgSuccess("任务下发成功！");
+                            that.qualityAbnormalCheckBoxCode = '';
+                            $.table.refresh();
+                        } else {
+                            that.qualityAbnormalDialogVisible = true;
+                            $.modal.msgError(data.data);
+                        }
+                    }
+                });
+            },
+
+            //确认退货（完成）
+            ensureReturnItem: function () {
+                let that = this;
+                if (that.isNull(that.returnItemPop.returnBoxCode)) {
+                    $.modal.msgError("请扫描箱号！");
+                    return false;
+                }
+                that.returnItemDialogVisible = false;
+                $.modal.loading("处理中，请稍后");
+                var list = {
+                    boxCode: that.returnItemPop.returnBoxCode,
+                    loginPersonCardNo: that.loginPersonCardNo,
+                }
+                $.ajax({
+                    type: "post",
+                    url: "/out/billOutDetail/ensureReturnItem",
+                    data: JSON.stringify(list),
+                    dataType: "json",
+                    contentType: "application/json;charset-UTF-8",
+                    error: function (data) {
+                        $.modal.msgError("系统错误，请联系管理员");
+                        $.modal.closeLoading();
+                    },
+                    success: function (data) {
+                        $.modal.closeLoading();
+                        if (data.code === 200) {
+                            $.table.refresh();
+                            $.modal.msgSuccess("任务下发成功")
+                            that.returnItemPop.returnBoxCode = '';
+                        } else {
+                            $.modal.msgError(data.data);
+                            that.returnItemDialogVisible = true;
+                        }
+                    }
+                });
+            },
+
+            //点击报废完成后入库
+            scrapInBox: function () {
+                let that = this;
+                if (that.isNull(that.scrapItem.boxCode)) {
+                    $.modal.msgError("请扫描箱号！")
+                    return false;
+                }
+                that.scrapOutDialogVisible = false;
+                $.modal.loading("处理中，请稍等");
+                var list = {
+                    boxCode: that.scrapItem.boxCode,
+                    loginPersonCardNo: that.loginPersonCardNo,
+                }
+                $.ajax({
+                    type: "post",
+                    url: "/out/billOutDetail/scrapInBox",
+                    data: JSON.stringify(list),
+                    dataType: "json",
+                    contentType: "application/json;charset-UTF-8",
+                    error: function (data) {
+                        $.modal.msgError("系统错误，请联系管理员");
+                        $.modal.closeLoading();
+                    },
+                    success: function (data) {
+                        $.modal.closeLoading();
+                        if (data.code === 200) {
+                            that.scrapItem.boxCode = '';
+                            $.modal.msgSuccess("报废成功");
+                            $.table.refresh();
+                        }
+                        else if(data.code === 100008){
+                            $.modal.msgError(data.data);
+                            that.scrapOutDialogVisible = true;
+                        }
+                        else {
+                            $.modal.msgError(data.msg);
+                            that.scrapOutDialogVisible = true;
+                        }
+                    }
+                });
+            },
+
+            //刷卡验证（ok）
+            qwe: function () {
+                let that = this;
+                if (that.card == '' || that.card == null) {
+                    alert("请刷卡登陆！");
+                    return false
+                }
+                let card = {
+                    card: that.card,
+                }
+                $.modal.loading("验证中，请稍后");
+                $.ajax({
+                    type: "post",
+                    url: "/system/operator/findByCard",
+                    data: JSON.stringify(card),
+                    dataType: "json",
+                    contentType: "application/json;charset-UTF-8",
+                    async: false,
+                    error: function (data) {
+                        $.modal.msgError("系统错误");
+                        $.modal.closeLoading();
+                    },
+                    success: function (data) {
+                        $.modal.closeLoading();
+                        if (data.code === 200) {
+                            that.taskStartTime = that.date;
+                            that.loginPerson = data.data.operatorName + data.data.empNo;
+                            that.loginPersonCardNo = data.data.operatorCard;
+                            that.card = '';
+                            that.operator = data.data;
+                            document.querySelector('.popContainer').style.display = 'none';
+                        } else {
+                            $.modal.msgError("系统无此账户,请联系管理员！");
+                        }
+                    },
+                });
+            },
+
+            /**
+             *   非工单出库修改
+             * */
+            //下发非工单出库任务
+            nonWorkerOrderItemOutBox: function () {
+                let that = this;
+                var rows = $('#bootstrap-table').bootstrapTable('getAllSelections');
+                if (rows.length > 1) {
+                    $.modal.msgError("请勾选一箱物料！");
+                    return false;
+                }
+                if (that.isNull(that.nonWorkerOrderOut.type)) {
+                    $.modal.msgWarning("请选择类型！");
+                    return false;
+                }
+                if (that.isNull(that.nonWorkerOrderOut.outQuantity)) {
+                    $.modal.msgError("请填写出库数量！")
+                    return false;
+                }
+                if (that.nonWorkerOrderOut.type === 2 && that.isNull(that.nonWorkerOrderOut.dispositionId)) {
+                    $.modal.msgError("请选择账户别名！")
+                    return false;
+                }
+                if (that.nonWorkerOrderOut.type === 2 && that.isNull(that.nonWorkerOrderOut.transactionType)) {
+                    $.modal.msgError("请选择事务类型！")
+                    return false;
+                }
+                $.modal.loading("处理中，请稍后");
+                let list = {
+                    transactionType: that.nonWorkerOrderOut.transactionType,
+                    type: that.nonWorkerOrderOut.type,
+                    loginPersonCardNo: that.loginPersonCardNo,
+                    quantity: that.nonWorkerOrderOut.outQuantity,
+                    boxCode:rows[0].boxCode,
+                }
+                that.nonWorkerOrderOutDialogVisible = false;
+                $.ajax({
+                    type: "post",
+                    url: "/out/billOutDetail/nonWorkerOrderItemOutBox",
+                    data: JSON.stringify(list),
+                    dataType: "json",
+                    contentType: "application/json;charset-UTF-8",
+
+                    error: function (data) {
+                        $.modal.closeLoading();
+                        $.modal.msgError("系统错误");
+                    },
+                    success: function (data) {
+                        $.modal.closeLoading();
+                        if (data.code === 200) {
+                            $.modal.msgSuccess("任务已下发！请稍等！")
+                            that.nonWorkerOrderOut.surplusQuantity = data.data;
+                            that.type = true;
+                            that.dispositionId = true;
+                            that.transactionType = true;
+                            that.nonWorkerOrderOutDialogVisible = true;
+                        } else {
+                            that.nonWorkerOrderOutDialogVisible = true;
+                            $.modal.msgError(data.msg);
+                        }
+                    },
+                });
+            },
+            //非工单出库完成
+            nonWorkerOrderOutFinish: function () {
+                let that = this;
+                if (that.isNull(that.nonWorkerOrderOut.outQuantity)) {
+                    $.modal.msgError("请填写出库数量！")
+                    return false;
+                }
+                if (that.isNull(that.nonWorkerOrderOut.boxCode)) {
+                    $.modal.msgError("请扫描箱号！")
+                    return false;
+                }
+                that.nonWorkerOrderOutDialogVisible = false;
+                $.modal.loading("处理中，请稍后");
+                let list = {
+                    transactionType: that.nonWorkerOrderOut.transactionType,
+                    loginPersonCardNo: that.loginPersonCardNo,
+                    boxCode: that.nonWorkerOrderOut.boxCode,
+                    quantity: that.nonWorkerOrderOut.outQuantity,
+                    dispositionId: that.nonWorkerOrderOut.dispositionId,
+                    type: that.nonWorkerOrderOut.type,
+                }
+                $.ajax({
+                    cache: true,
+                    type: "POST",
+                    url: "/out/billOutDetail/nonWorkerOrderOutFinish",
+                    data: JSON.stringify(list),
+                    dataType: "json",
+                    contentType: "application/json;charset-UTF-8",
+                    error: function (request) {
+                        $.modal.closeLoading();
+                        alert("系统错误，请联系管理员！");
+                    },
+                    success: function (data) {
+                        $.modal.closeLoading();
+                        if (data.code == 200) {
+                            $.modal.msgSuccess("任务下发完成");
+                            that.nonWorkerOrderOut.type = '';
+                            that.nonWorkerOrderOut.dispositionId = '';
+                            that.nonWorkerOrderOut.outQuantity = '';
+                            that.nonWorkerOrderOut.surplusQuantity = '';
+                            that.nonWorkerOrderOut.boxCode = '';
+                            that.nonWorkerOrderOut.transactionType = '';
+                            that.type = false;
+                            that.dispositionId = false;
+                            that.transactionType = false;
+                            $.table.refresh();
+                        } else {
+                            that.nonWorkerOrderOutDialogVisible = true;
+                            $.modal.msgError(data.msg)
+                        }
+                    }
+                });
+            },
+
+            //iqc检验出库(ok)
+            IQCout: function () {
+                let that = this;
+                var rows = $('#bootstrap-table').bootstrapTable('getAllSelections');
+                if (rows.length > 1) {
+                    $.modal.msgError("请勾选一箱物料！");
+                    return false;
+                }
+                if (that.isNull(that.nonWorkerOrderOut.outQuantity)) {
+                    $.modal.msgError("请填写出库数量！")
+                    return false;
+                }
+                if (that.isNull(that.nonWorkerOrderOut.dispositionId)) {
+                    $.modal.msgError("请扫描箱号！")
+                    return false;
+                }
+                that.nonWorkerOrderOutDialogVisible = false;
+                $.modal.loading("处理中，请稍后");
+                let list = {
+                    type: that.nonWorkerOrderOut.type,
+                    loginPersonCardNo: that.loginPersonCardNo,
+                    dispositionId: that.nonWorkerOrderOut.dispositionId,
+                    boxCode: rows[0].boxCode,
+                    quantity: that.nonWorkerOrderOut.outQuantity,
+                }
+                $.ajax({
+                    type: "post",
+                    url: "/out/billOutDetail/IQCOut",
+                    data: JSON.stringify(list),
+                    dataType: "json",
+                    contentType: "application/json;charset-UTF-8",
+                    error: function (request) {
+                        $.modal.closeLoading();
+                        alert("系统错误，请联系管理员！");
+                    },
+                    success: function (data) {
+                        $.modal.closeLoading();
+                        if (data.code == 200) {
+                            $.modal.msgSuccess("任务下发完成");
+                            that.nonWorkerOrderOut.type = '';
+                            that.nonWorkerOrderOut.dispositionId = '';
+                            that.nonWorkerOrderOut.outQuantity = '';
+                            that.nonWorkerOrderOut.surplusQuantity = '';
+                            that.nonWorkerOrderOut.boxCode = '';
+                            that.nonWorkerOrderOut.transactionType = '';
+                            that.type = false;
+                            that.dispositionId = false;
+                            that.transactionType = false;
+                            $.table.refresh();
+                        } else {
+                            that.nonWorkerOrderOutDialogVisible = true;
+                            $.modal.msgError(data.msg)
+                        }
+                    }
+                });
+            },
+
+            //子库转移确认（完成）
+            commitSubInventoryTransfer: function () {
+                let that = this;
+                var rows = $('#bootstrap-table').bootstrapTable('getAllSelections');
+                var lists = [];
+                for (var j = 0; j < rows.length; j++) {
+                    lists.push(rows[j].id);
+                    if (rows[j].boxState !== 1) {
+                        $.modal.msgWarning("请选择在货位上的物料")
+                        return false;
+                    }
+                }
+                if (that.subInventory.toSubInventoryId === '' || that.subInventory.toSubInventoryId === undefined || that.subInventory.toSubInventoryId === null) {
+                    $.modal.msgWarning("请选择转移子库！")
+                    return false;
+                }
+                if ((that.subInventory.toSubInventoryId === 2 || that.subInventory.toSubInventoryId == 5) &&
+                    (that.subInventory.transferReason === '' || that.subInventory.transferReason === undefined
+                        || that.subInventory.transferReason === null)) {
+                    $.modal.msgWarning("请选择或者输入转移原因！")
+                    return false;
+                }
+                if ((that.subInventory.toSubInventoryId == 4) &&
+                    (that.subInventory.postpone === '' || that.subInventory.postpone === undefined
+                        || that.subInventory.postpone === null)) {
+                    $.modal.msgWarning("请选择延期日期或输入工单ID！")
+                    return false;
+                }
+                that.subInventoryTransferDialogVisible = false;
+                $.modal.loading("处理中，请稍等！");
+                var list = {
+                    ids: lists,
+                    loginPersonCardNo: that.loginPersonCardNo,
+                    toSubInventoryId: that.subInventory.toSubInventoryId,
+                    transferReason: that.subInventory.transferReason,
+                    postpone: that.subInventory.postpone,
+                }
+                $.ajax({
+                    type: "post",
+                    url: "/subinventoryTransferRecord/subInventoryTransfer",
+                    data: JSON.stringify(list),
+                    dataType: "json",
+                    contentType: "application/json;charset-UTF-8",
+                    /*async: true,*/
+                    error: function (data) {
+                        $.modal.msgError("系统错误，请联系管理员");
+                        $.modal.closeLoading();
+                    },
+                    success: function (data) {
+                        $.modal.closeLoading();
+                        if (data.code == 200) {
+                            $.modal.msgSuccess("转移成功！");
+                            that.closeSubinventoryTransfer();
+                            $.table.refresh();
+                        } else {
+                            that.subInventoryTransferDialogVisible = true;
+                            $.modal.msgError(data.msg);
+                        }
+                    }
+                });
+            },
+            //关闭子库转移弹窗（完成）
+            closeSubinventoryTransfer: function () {
+                let that = this;
+                that.subInventoryTransferDialogVisible = false;
+                that.subInventory.toSubInventoryId = '';
+                that.subInventory.transferReason = '';
+                that.subInventory.postpone = '';
+                that.subInventory.delayWorkerOrderId = '';
+            },
+
+            //库存锁定或解锁(完成)
+            commitForecastLock: function () {
+                let that = this;
+                var rows = $('#bootstrap-table').bootstrapTable('getAllSelections');
+                if (rows.length > 1) {
+                    $.modal.msgWarning("请勾选一箱物料");
+                    return false;
+                }
+                if (that.isNull(that.forecastLock.quantity)) {
+                    $.modal.msgWarning("请填写数量！")
+                    return false;
+                }
+                if (that.isNull(that.forecastLock.lock)) {
+                    $.modal.msgWarning("请选择操作类型！")
+                    return false;
+                }
+                that.forecastLockDialogVisible = false;
+                $.modal.loading("处理中，请稍等！");
+                var list = {
+                    boxCode: rows[0].boxCode,
+                    loginPersonCardNo: that.loginPersonCardNo,
+                    lock: that.forecastLock.lock,
+                    quantity: that.forecastLock.quantity,
+                }
+                $.ajax({
+                    type: "post",
+                    url: "/subinventoryTransferRecord/lockOrRelease",
+                    data: JSON.stringify(list),
+                    dataType: "json",
+                    contentType: "application/json;charset-UTF-8",
+                    /*async: true,*/
+                    error: function (data) {
+                        $.modal.msgError("系统错误，请联系管理员");
+                        $.modal.closeLoading();
+                    },
+                    success: function (data) {
+                        $.modal.closeLoading();
+                        if (data.code == 200) {
+                            if (that.forecastLock.lock === 1) {
+                                $.modal.msgSuccess("锁定成功！");
+                            } else {
+                                $.modal.msgSuccess("释放成功！");
+                            }
+                            that.forecastLock.lock = '';
+                            that.forecastLock.quantity = '';
+                            $.table.refresh();
+                        } else {
+                            that.forecastLockDialogVisible = true;
+                            $.modal.msgError(data.msg);
+                        }
+                    }
+                });
+            },
+
+            //退库出箱
+            backWareHouseOutBox: function () {
+                let that = this;
+                var rows = $('#bootstrap-table').bootstrapTable('getAllSelections');
+                if (rows.length > 1) {
+                    $.modal.msgWarning("仅能勾选一箱，请勿多选");
+                    return false;
+                }
+                if (that.isNull(that.backWareHouse.quantity)) {
+                    $.modal.msgWarning("请填写退库数量");
+                    return false;
+                }
+                that.backWareHouseDialogVisible = false;
+                $.modal.loading("处理中，请稍后");
+                var list = {
+                    boxCode: rows[0].boxCode,
+                    loginPersonCardNo: that.loginPersonCardNo,
+                    quantity: that.backWareHouse.quantity,
+                }
+                $.ajax({
+                    type: "post",
+                    url: "/out/billOutMaster/returnItemOutBox",
+                    data: JSON.stringify(list),
+                    dataType: "json",
+                    contentType: "application/json;charset-UTF-8",
+                    /*async: true,*/
+                    error: function (data) {
+                        $.modal.msgError("系统错误，请联系管理员");
+                        $.modal.closeLoading();
+                    },
+                    success: function (data) {
+                        $.modal.closeLoading();
+                        if (data.code == 200) {
+                            $.modal.msgSuccess("任务下发成功！");
+                            $.table.refresh();
+                            that.backWareHouseDialogVisible = true;
+                        } else {
+                            $.modal.msgError(data.msg);
+                        }
+                    }
+                });
+            },
+            //退库（完成）
+            backWareHouseBoxIn: function () {
+                let that = this;
+                if (that.isNull(that.backWareHouse.quantity)) {
+                    $.modal.msgWarning("请填写返库数量！")
+                    return false;
+                }
+                if (that.isNull(that.backWareHouse.boxCode)) {
+                    $.modal.msgWarning("请扫描箱号！")
+                    return false;
+                }
+                if (that.backWareHouse.quantity <= 0) {
+                    $.modal.msgWarning("数量请大于0");
+                    return false;
+                }
+                that.backWareHouseDialogVisible = false;
+                $.modal.loading("处理中，请稍等！");
+                var list = {
+                    cardOne: that.backWareHouse.cardOne,
+                    boxCode: that.backWareHouse.boxCode,
+                    loginPersonCardNo: that.loginPersonCardNo,
+                    quantity: that.backWareHouse.quantity,
+                }
+                $.ajax({
+                    type: "post",
+                    url: "/out/billOutMaster/backWareHouseIn",
+                    data: JSON.stringify(list),
+                    dataType: "json",
+                    contentType: "application/json;charset-UTF-8",
+                    /*async: true,*/
+                    error: function (data) {
+                        $.modal.msgError("系统错误，请联系管理员");
+                        $.modal.closeLoading();
+                    },
+                    success: function (data) {
+                        $.modal.closeLoading();
+                        if (data.code == 200) {
+                            $.modal.msgSuccess("任务下发成功，请稍等");
+                            $.table.refresh();
+                            that.backWareHouse.quantity = '';
+                            that.backWareHouse.boxCode = '';
+                            that.backWareHouse.cardOne = '';
+                        } else {
+                            that.backWareHouseDialogVisible = true;
+                            $.modal.msgError(data.msg);
+                        }
+                    }
+                });
+            },
+
+            //流程编号填写
+            commitFlowCode: function () {
+                let that = this;
+                var rows = $('#bootstrap-table').bootstrapTable('getAllSelections');
+                if (rows.length > 1) {
+                    $.modal.msgError("请勾选一箱物料！");
+                    return false;
+                }
+                if (that.isNull(that.flowCodeParam.toSubInventoryId)) {
+                    $.modal.msgError("请选择过期前此物料子库！")
+                    return false;
+                }
+                if (that.isNull(that.flowCodeParam.flowCode)) {
+                    $.modal.msgWarning("请填写流程编号！")
+                    return false;
+                }
+                that.flowCodeDialogVisible = false;
+                $.modal.loading("处理中，请稍等！");
+                var list = {
+                    subInventoryId: that.flowCodeParam.toSubInventoryId,
+                    flowCode: that.flowCodeParam.flowCode,
+                    loginPersonCardNo: that.loginPersonCardNo,
+                    itemCode:rows[0].itemCode,
+                    batch:rows[0].batch,
+                    exp:rows[0].exp,
+                }
+                $.ajax({
+                    type: "post",
+                    url: "/processRecord/addFlowCode",
+                    data: JSON.stringify(list),
+                    dataType: "json",
+                    contentType: "application/json;charset-UTF-8",
+                    /*async: true,*/
+                    error: function (data) {
+                        $.modal.msgError("系统错误，请联系管理员");
+                        $.modal.closeLoading();
+                    },
+                    success: function (data) {
+                        $.modal.closeLoading();
+                        if (data.code == 200) {
+                            $.modal.msgSuccess("处理成功！");
+                            $.table.refresh();
+                            that.flowCodeParam.toSubInventoryId = '';
+                            that.flowCodeParam.flowCode = '';
+                        } else {
+                            that.flowCodeDialogVisible = true;
+                            $.modal.msgError(data.msg);
+                        }
+                    }
+                });
+            },
+
+            //遮罩层
+            showOverlay(content) {
+                let that = this;
+                let text = '';
+                if (content) {
+                    text = content
+                }
+                that.loading = that.$loading({
+                    lock: true,
+                    text: text || '',
+                    spinner: 'el-icon-loading',
+                    background: 'rgba(0, 0, 0, 0.7)'
+                });
+            },
+            hideOverlay() {
+                let that = this;
+                if (that.loading) {
+                    that.loading.close();
+                }
+            },
+
+            isNull: function (param) {
+                if (param === null || param === undefined || param === '') {
+                    return true;
+                }
+                return false;
+            }
+        },
+        created: function () {
+            let that = this;
+            //获取账户别名
+            $.ajax({
+                type: "post",
+                url: "/accountAlias/findAccountAliasList",
+                data: JSON.stringify({keyWords:""}),
+                dataType: "json",
+                contentType: "application/json;charset-UTF-8",
+                async: false,
+                error: function (data) {
+                    $.modal.msgError("系统错误");
+                },
+                success: function (data) {
+                    if (data.code === 200) {
+                        that.accountAliass = data.data;
+                    } else {
+                        $.modal.msgError("获取账户别名失败,请刷新或者联系管理员！");
+                    }
+                },
+            });
+            //获取子库
+            $.ajax({
+                type: "post",
+                url: "/subInventory/findIdNotEqualOne",
+                data: JSON.stringify(),
+                dataType: "json",
+                contentType: "application/json;charset-UTF-8",
+                async: false,
+                error: function (data) {
+                    $.modal.msgError("系统错误");
+                },
+                success: function (data) {
+                    if (data.code === 200) {
+                        that.subInventory.subInventorys = data.data;
+                    } else {
+                        $.modal.msgError("系统无此子库,请联系管理员！");
+                    }
+                },
+            });
+            //获取原因
+            $.ajax({
+                type: "get",
+                url: "/transferReason/findList",
+                data: JSON.stringify(),
+                dataType: "json",
+                contentType: "application/json;charset-UTF-8",
+                async: false,
+                error: function (data) {
+                    $.modal.msgError("系统错误");
+                },
+                success: function (data) {
+                    if (data.code === 200) {
+                        that.subInventory.transferReasons = data.data;
+                    } else {
+                        $.modal.msgError("获取失败,请联系管理员！");
+                    }
+                },
+            });
+        },
+        mounted: function () {
+            $('#card').focus();
+        },
+    })
+</script>
+</body>
+
+</html>

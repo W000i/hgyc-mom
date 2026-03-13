@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+	<th:block th:include="include :: header('任务管理')" />
+</head>
+<body class="gray-bg">
+     <div class="container-div" onmousemove="parent.updateTimeOut()">
+		<div class="row">
+			<div class="col-sm-12 search-collapse">
+				<form id="formId">
+					<div class="select-list">
+						<ul>
+							<li>
+								箱号：<input type="text" name="boxCode"/>
+							</li>
+							<li>
+								类型：
+								<select name="type">
+									<option value=""></option>
+									<option value="1">出空筐或半筐到入库口</option>
+									<option value="2">入库口入空筐</option>
+									<option value="3">入库口入有料筐</option>
+									<option value="11">出筐到点数机</option>
+									<option value="12">点数任务执行</option>
+									<option value="13">点数机出筐回货架</option>
+									<option value="14">载具出货到出货口</option>
+									<option value="15">异常处理位调度中</option>
+									<option value="21">盘点任务(待盘点物料出库)</option>
+									<option value="22">盘点任务(空筐出库)</option>
+									<option value="23">盘点任务(点数任务执行)</option>
+									<option value="24">盘点任务(空筐回货架)</option>
+									<option value="25">盘点任务(满筐至入库口)</option>
+									<option value="26">盘点任务(贴标回库)</option>
+								</select>
+							</li>
+							<li>
+								状态：
+								<select name="state">
+									<option value=""></option>
+									<option value="0">待下发</option>
+									<option value="1">已下发(任务中)</option>
+									<option value="3">已完成</option>
+									<option value="5">出库至点数机任务中</option>
+								</select>
+							</li>
+							<li>
+								操作员：<input type="text" name="operatorName"/>
+							</li>
+							<li class="select-time">
+								<label>任务开始时间： </label>
+								<input type="text" class="time-input" id="startTime" placeholder="开始时间" name="startTime"/>
+								<span>-</span>
+								<input type="text" class="time-input" id="endTime" placeholder="结束时间" name="endTime"/>
+							</li>
+							<li>
+								<a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+								<a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+							</li>
+						</ul>
+					</div>
+				</form>
+			</div>
+			
+	        <div class="btn-group-sm" id="toolbar" role="group">
+				<!--<a class="btn btn-success" onclick="$.operate.add()">
+					<i class="fa fa-plus"></i> 添加
+				</a>-->
+<!--				<a class="btn btn-primary btn-edit disabled" onclick="$.operate.edit()" shiro:hasPermission="system:cellInfo:edit">-->
+<!--					<i class="fa fa-edit"></i> 修改-->
+<!--				</a>-->
+<!--				<a class="btn btn-danger btn-del btn-del disabled" onclick="$.operate.removeAll()" shiro:hasPermission="system:cellInfo:remove">-->
+<!--					<i class="fa fa-remove"></i> 删除-->
+<!--				</a>-->
+<!--				<a class="btn btn-warning" @click="synchronizedAccountAlias()">-->
+<!--						<i class="fa fa-download"></i> 同步EBS账户别名-->
+<!--				</a>-->
+				<a class="btn btn-warning" onclick="$.table.exportExcel()" shiro:hasPermission="system:taskInfo:export">
+					<i class="fa fa-download"></i> 导出
+				</a>
+			</div>
+			<div class="col-sm-12 select-table table-striped">
+				<table id="bootstrap-table" data-mobile-responsive="true"></table>
+			</div>
+		</div>
+	</div>
+    <div th:include="include :: footer"></div>
+    <script th:inline="javascript">
+        var editFlag = [[${@permission.hasPermi('subInventory:edit')}]];
+        var removeFlag = [[${@permission.hasPermi('subInventory:delete')}]];
+        var prefix = ctx + "in/taskInfo";
+
+        $(function() {
+            var options = {
+                url: prefix + "/findList",
+                createUrl: prefix + "/add",
+                updateUrl: prefix + "/edit/{id}",
+                removeUrl: prefix + "/remove/{id}",
+				exportUrl: prefix + "/export",
+                modalName: "任务管理",
+		        showExport: false,
+                columns: [
+                // 		{
+		        //     checkbox: true
+		        // },
+				{
+					field : 'taskId',
+					title : '任务编号',
+					visible: true
+				},
+					{
+						field : 'startPosition',
+						title : '起始位置',
+						visible: true
+					},
+					{
+						field : 'endPosition',
+						title : '结束位置',
+						visible: true
+					},
+				{
+					field : 'boxCode',
+					title : '箱号',
+					visible: true
+				},
+				{
+					field : 'type',
+					title : '类型',
+					sortable: true,
+					formatter:function(value,row,index){
+						switch(value){
+							case 1:return "出空筐或半筐到入库口";break;
+							case 2:return "入库口入空筐";break;
+							case 3:return "入库口入有料筐";break;
+							case 11:return "出筐到点数机";break;
+							case 12:return "点数任务执行";break;
+							case 13:return "点数机出筐回货架";break;
+							case 14:return "载具出货到出货口";break;
+							case 15:return "异常处理位调度中";break;
+							case 21:return "盘点任务(待盘点物料出库)";break;
+							case 22:return "盘点任务(空筐出库)";break;
+							case 23:return "盘点任务(点数任务执行)";break;
+							case 24:return "盘点任务(空筐回货架)";break;
+							case 25:return "盘点任务(满筐至入库口)";break;
+							case 26:return "盘点任务(贴标回库)";break;
+						}
+					}
+				},
+				{
+					field : 'state',
+					title : '状态',
+					sortable: true,
+					formatter:function(value,row,index){
+						switch(value){
+							case 0:return "待下发";break;
+							case 1:return "已下发(任务中)";break;
+							case 3:return "已完成";break;
+							case 5:return "出库至点数机任务中";break;
+						}
+					}
+				},
+					{
+						field : 'billNo',
+						title : '工单Id',
+						sortable: true,
+						formatter:function(value,row,index){
+							if(row.billMasterType === 1){
+								return value;
+							}
+							else if(row.billMasterType === 2){
+								return value;
+							}
+							else{
+								return "-";
+							}
+						}
+					},
+					{
+						field : 'quantity',
+						title : '数量',
+						sortable: true
+					},
+					{
+						field : 'completeQuantity',
+						title : '点数完成数量',
+						sortable: true
+					},
+				{
+					field : 'operatorName',
+					title : '操作人员',
+					sortable: true
+				},
+				{
+					field : 'taskStartTime',
+					title : '操作开始时间',
+					sortable: true
+				},
+				{
+					field : 'taskEndTime',
+					title : '操作结束时间',
+					sortable: true
+				},
+		        /*{
+		            title: '操作',
+		            align: 'center',
+		            formatter: function(value, row, index) {
+		            	var actions = [];
+		            	actions.push('<a class="btn btn-success btn-xs ' + editFlag + '" href="#" onclick="$.operate.edit(\'' + row.subInventoryId + '\')"><i class="fa fa-edit"></i>编辑</a> ');
+                        actions.push('<a class="btn btn-danger btn-xs ' + removeFlag + '" href="#" onclick="$.operate.remove(\'' + row.subInventoryId + '\')"><i class="fa fa-remove"></i>删除</a>');
+						return actions.join('');
+		            }
+		        }*/
+		        ]
+            };
+            $.table.init(options);
+        });
+		var app = new Vue({
+			el: '.container-div',
+			data: {
+				message: 'Hello Vue!',
+			},
+			methods: {
+				// synchronizedAccountAlias:function(){
+				// 	$.modal.confirm("确定同步吗？",function(){
+				// 		$.operate.get("/accountAlias/synchronizedAccountAlias");
+				// 	});
+				// }
+			},
+			created: function () {
+			},
+		})
+
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+

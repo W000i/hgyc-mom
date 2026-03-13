@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.deer.wms.base.system.dao.WarnInformationMapper">
+  <resultMap id="BaseResultMap" type="com.deer.wms.base.system.model.WarnInformation">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <result column="warn_id" jdbcType="INTEGER" property="warnId" />
+    <result column="memo" jdbcType="VARCHAR" property="memo" />
+    <result column="state" jdbcType="INTEGER" property="state" />
+    <result column="type" jdbcType="INTEGER" property="type" />
+    <result column="create_time" jdbcType="VARCHAR" property="createTime"/>
+    <result column="finish_time" jdbcType="VARCHAR" property="finishTime"/>
+    <result column="alarm_code" jdbcType="VARCHAR" property="alarmCode"/>
+    <result column="alarm_state" jdbcType="INTEGER" property="alarmState"/>
+    <result column="handle_card" jdbcType="VARCHAR" property="handleCard"/>
+    <result column="box_code" jdbcType="VARCHAR" property="boxCode"/>
+    <result column="task_id" jdbcType="VARCHAR" property="taskId"/>
+  </resultMap>
+
+  <resultMap id="Dto" type="com.deer.wms.base.system.model.WarnInformationDto" extends="BaseResultMap">
+    <result column="location" jdbcType="VARCHAR" property="location"/>
+    <result column="content" jdbcType="VARCHAR" property="content"/>
+    <result column="process_method" jdbcType="VARCHAR" property="processMethod"/>
+    <result column="within" jdbcType="VARCHAR" property="within"/>
+    <result column="name" jdbcType="VARCHAR" property="name"/>
+  </resultMap>
+
+  <resultMap id="warnDto" type="com.deer.wms.base.system.model.threeDimensional.Warn">
+    <result column="warn_id" jdbcType="INTEGER" property="warnId" />
+    <result column="memo" jdbcType="VARCHAR" property="memo" />
+    <result column="create_time" jdbcType="VARCHAR" property="createTime"/>
+    <result column="box_code" jdbcType="VARCHAR" property="boxCode"/>
+    <result column="task_id" jdbcType="VARCHAR" property="taskId"/>
+    <result column="location" jdbcType="VARCHAR" property="location"/>
+    <result column="content" jdbcType="VARCHAR" property="content"/>
+    <result column="state" jdbcType="INTEGER" property="state" />
+  </resultMap>
+
+  <select id="findList" parameterType="com.deer.wms.base.system.model.WarnInformationCriteria" resultMap="Dto">
+    select
+    wi.*,
+    concat(op.operator_name,"-",op.emp_no) as name,
+    concat(TIMESTAMPDIFF(SECOND,wi.create_time,wi.finish_time),"秒") as within,
+    wa.location,
+    wa.content,
+    wa.process_method
+    from warn_information wi
+    left join warn_alram wa on wa.`code` = wi.alarm_code and wa.state = wi.alarm_state
+    left join operator op on op.operator_card = wi.handle_card
+    where 1=1
+    <if test="state != null and state != -1">
+      and wi.state = #{state}
+    </if>
+    <if test="type != null and type != -1">
+      and wi.type = #{type}
+    </if>
+    <if test="ids != null">
+      and wi.warn_id in
+      <foreach item="id" collection="ids" open="(" separator="," close=")">
+        #{id}
+      </foreach>
+    </if>
+    order by wi.state asc,warn_id desc
+  </select>
+
+  <select id="findUntreated" parameterType="com.deer.wms.base.system.model.WarnInformationCriteria" resultMap="warnDto">
+    <if test="state != null and state == 1">
+      select count(0) as warn_id from (
+    </if>
+    select
+    wi.warn_id,
+    wi.memo,
+    wi.create_time,
+    wi.box_code,
+    wi.task_id,
+    wa.location,
+    wa.content,
+    wi.state
+    from warn_information wi
+    left join warn_alram wa on wa.`code` = wi.alarm_code and wa.state = wi.alarm_state
+    where 1=1
+    and wi.state = 1
+    order by warn_id desc
+    <if test="state != null and state == 1">
+      ) as total
+    </if>
+  </select>
+
+</mapper>

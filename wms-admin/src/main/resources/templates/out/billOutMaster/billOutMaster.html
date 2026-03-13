@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+	<th:block th:include="include :: header('出库单列表')" />
+</head>
+<body class="gray-bg">
+    
+     <div class="container-div" onmousemove="parent.updateTimeOut()">
+		<div class="row">
+
+			<div class="col-sm-12 search-collapse">
+				<form id="formId">
+					<div class="select-list">
+						<ul>
+							<li>
+								工单ID：<input type="text" name="billNo"/>
+							</li>
+							<li>
+								料号：<input type="text" name="itemCode"/>
+							</li>
+							<li>
+								状态：
+								<select name="state">
+									<option value="-1"></option>
+									<option value="0">任务等待下发</option>
+									<option value="1">任务已下发</option>
+									<option value="2">任务已完成</option>
+									<option value="3">任务取消</option>
+								</select>
+							</li>
+							<li>
+								类型：
+								<select name="type">
+									<option value="-1"></option>
+									<option value="1">MES工单自动出库</option>
+									<option value="2">工单手动出库</option>
+									<option value="3">退货出库</option>
+									<option value="4">IQC数据扣减</option>
+									<option value="5">账户别名发放</option>
+									<option value="6">非工单出库</option>
+									<option value="7">物料转卖</option>
+									<option value="8">账户别名接收</option>
+									<option value="9">退库</option>
+									<option value="10">报废出库</option>
+								</select>
+							</li>
+							<li>
+								<a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+								<a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+							</li>
+						</ul>
+					</div>
+				</form>
+			</div>
+			
+	        <!--<div class="btn-group-sm" id="toolbar" role="group">
+				<a class="btn btn-success" onclick="addBill()" shiro:hasPermission="out:billOutMaster:add">
+					<i class="fa fa-plus"></i> 添加
+				</a>
+				<a class="btn btn-primary btn-edit disabled" onclick="$.operate.edit()" shiro:hasPermission="out:billOutMaster:edit">
+					<i class="fa fa-edit"></i> 修改
+				</a>
+				<a class="btn btn-danger btn-del btn-del disabled" onclick="$.operate.removeAll()" shiro:hasPermission="out:billOutMaster:remove">
+					<i class="fa fa-remove"></i> 删除
+				</a>
+				<a class="btn btn-warning" onclick="$.table.exportExcel()" shiro:hasPermission="out:billOutMaster:export">
+						<i class="fa fa-download"></i> 导出
+				 </a>
+			</div>-->
+			<div class="col-sm-12 select-table table-striped">
+				<table id="bootstrap-table" data-mobile-responsive="true"></table>
+			</div>
+		</div>
+	</div>
+
+
+    <div th:include="include :: footer"></div>
+    <script th:inline="javascript">
+        var editFlag = [[${@permission.hasPermi('out:billOutMaster:edit')}]];
+        var removeFlag = [[${@permission.hasPermi('out:billOutMaster:remove')}]];
+        var prefix = ctx + "out/billOutMaster";
+
+
+        function addBill(){
+
+			var _url = prefix+"/add";
+
+			$.modal.openFull("新增",_url);
+		}
+
+        $(function() {
+            var options = {
+                url: prefix + "/findList",
+                createUrl: prefix + "/add",
+                updateUrl: prefix + "/edit/{id}",
+                removeUrl: prefix + "/remove",
+				exportUrl: prefix + "/export",
+				detailUrl:prefix + "/detail",
+                modalName: "出库单",
+		        showExport: false,
+                columns: [
+                /*{
+		            checkbox: true
+		        },*/
+					{
+						field : 'billNo',
+						title : '工单Id',
+						sortable: true,
+						formatter:function(value,row,index){
+							if(row.type === 1){
+								return value;
+							}
+							else if(row.type === 2){
+								return value;
+							}
+							else{
+								return "-";
+							}
+						}
+					},
+					{
+						field : 'itemCode',
+						title : '料号',
+						sortable: true
+					},
+					{
+						field : 'quantity',
+						title : '数量',
+						sortable: true
+					},
+					{
+						field : 'createTime',
+						title : '创建时间',
+						sortable: true
+					},
+					{
+						field : 'type',
+						title : '类型',
+						sortable: true,
+						formatter:function(value,row,index){
+							if(value === 1){
+								return "MES工单自动出库";
+							}
+							else if(value === 2){
+								return "工单手动出库";
+							}
+							else if(value === 3){
+								return "退货出库";
+							}
+							else if(value === 4){
+								return "IQC数据扣减";
+							}
+							else if(value === 5){
+								return "账户别名发放";
+							}
+							else if(value === 6){
+								return "非工单出库";
+							}
+							else if(value === 7){
+								return "物料转卖";
+							}
+							else if(value === 8){
+								return "账户别名接收";
+							}
+							else if(value === 9){
+								return "退库";
+							}
+							else if(value === 10){
+								return "报废出库";
+							}
+						}
+					},
+					{
+						field : 'state',
+						title : '状态',
+						sortable: true,
+						formatter:function(value,row,index){
+							if(value === 0){
+								return "任务等待下发";
+							}
+							else if(value === 1){
+								return "任务已下发";
+							}
+							else if(value === 2){
+								return "任务已完成";
+							}
+							else if(value === 3){
+								return "工单取消";
+							}
+						}
+					},
+					{
+						field : 'createUserName',
+						title : '创建人',
+						sortable: true
+					},
+					{
+						field : 'memo',
+						title : '备注',
+						sortable: true
+					},
+		        /*{
+		            title: '操作',
+		            align: 'center',
+					events: {
+						'click .detail': function (e, value, rowData, index) {
+							var id = rowData.billId;
+
+							var _url =$.table._option.detailUrl;
+							localStorage.setItem(_url,id.toString());
+							$.modal.openFull("详情",_url);
+						},
+						'click .edit': function (e, value, rowData, index) {
+							$.operate.edit(rowData.billId)
+
+						},
+						'click .delete': function (e, value, rowData, index) {
+							$.operate.remove(rowData.billId)
+
+
+						}
+					},
+		            formatter: function(value, row, index) {
+		            	var actions = [];
+						actions.push('<a class="btn   btn-xs  detail"><i class="fa fa-remove"></i>查看</a>');
+						actions.push('<a class="btn btn-success btn-xs edit "><i class="fa fa-edit"></i>编辑</a> ');
+                        actions.push('<a class="btn btn-danger btn-xs  delete"><i class="fa fa-remove"></i>删除</a>');
+						return actions.join('');
+		            }
+		        }*/
+		        ]
+            };
+            $.table.init(options);
+        });
+    </script>
+</body>
+</html>

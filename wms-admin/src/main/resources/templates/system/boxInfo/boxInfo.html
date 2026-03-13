@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+	<th:block th:include="include :: header('容器列表')" />
+</head>
+<body class="gray-bg">
+
+<div class="container-div" onmousemove="parent.updateTimeOut()">
+	<div class="row">
+		<!--搜索框-->
+		<div class="col-sm-12 search-collapse">
+			<form id="formId">
+				<div class="select-list">
+					<ul>
+						<li>
+							箱号：<input type="text" name="boxCode"/>
+						</li>
+						<li>
+							状态：
+							<select name="state">
+								<option value="-1"></option>
+								<option value="1">货位上</option>
+								<option value="2">任务中</option>
+								<option value="3">出库至入库口任务中</option>
+							</select>
+						</li>
+						<li>
+							<a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+							<a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+						</li>
+					</ul>
+				</div>
+			</form>
+		</div>
+		<!--按钮组-->
+		<div class="btn-group-sm" id="toolbar" role="group">
+			<a class="btn btn-primary btn-edit disabled" @click="showUpdateCellDialogVisible" shiro:hasPermission="system:boxInfo:edit">
+				<i class="fa fa-edit"></i> 修改
+			</a>
+			<a class="btn btn-primary btn-edit disabled" @click="updateBoxTypeDialogVisible=true" shiro:hasPermission="system:boxInfo:edit">
+				<i class="fa fa-edit"></i> 修改筐类型
+			</a>
+		</div>
+		<!--表格-->
+		<div class="col-sm-12 select-table table-striped">
+			<table id="bootstrap-table" data-mobile-responsive="true"></table>
+		</div>
+	</div>
+	<!--修改模态框-->
+	<el-dialog title="修改" :visible.sync="updateCellDialogVisible" width="30%">
+		<el-form :model="addBoxInfo" label-width="80px">
+			<el-form-item label="货位" v-if="showModel">
+				<el-select v-model="cellId" style="width: 80%;" placeholder="请选择货位">
+					<el-option v-for="cell in cells" v-bind:value="cell.cellId"
+							   v-bind:label="cell.shelfName"></el-option>
+				</el-select>
+			</el-form-item>
+			<el-form-item label="状态">
+				<el-select v-model="state" style="width: 80%;">
+					<el-option v-bind:value="1" label="货位上"></el-option>
+				</el-select>
+			</el-form-item>
+		</el-form>
+
+		<span slot="footer" class="dialog-footer">
+                <el-button @click="updateCellDialogVisible = false">取 消</el-button>
+                <el-button type="primary" @click="updateCell()">确 定</el-button>
+            </span>
+	</el-dialog>
+	<el-dialog title="修改" :visible.sync="updateBoxTypeDialogVisible" width="30%">
+		<el-form :model="addBoxInfo" label-width="80px">
+
+			<el-form-item label="筐类型">
+				<el-select v-model="boxType" style="width: 80%;" placeholder="请选择框类型">
+					<el-option v-bind:value="1" label="A筐"></el-option>
+					<el-option v-bind:value="2" label="B筐"></el-option>
+				</el-select>
+			</el-form-item>
+		</el-form>
+		<span slot="footer" class="dialog-footer">
+                <el-button @click="updateBoxTypeDialogVisible = false">取 消</el-button>
+                <el-button type="primary" @click="updateBoxType()">确 定</el-button>
+            </span>
+	</el-dialog>
+</div>
+<div th:include="include :: footer"></div>
+<script th:inline="javascript">
+	var editFlag = [[${@permission.hasPermi('system:boxInfo:edit')}]];
+	var removeFlag = [[${@permission.hasPermi('system:boxInfo:remove')}]];
+	var prefix = ctx + "boxInfo";
+
+	var app = new Vue({
+		el: '.container-div',
+		data: {
+			dialogFormVisible:false,
+			addDialogVisible:false,
+			boxInfo:{
+
+			},
+			addBoxInfo:{
+				boxCode:'',
+				boxType:'',
+				box_memo:'',
+			},
+
+			showModel:true,
+
+			updateCellDialogVisible:false,
+			cells:[],
+			cellId:'',
+			state:'',
+
+			updateBoxTypeDialogVisible:false,
+			boxType:'',
+		},
+		methods:{
+			showUpdateCellDialogVisible:function(){
+				let that = this;
+				var rows = $('#bootstrap-table').bootstrapTable('getAllSelections');
+				if (rows[0].boxCellId === null || rows[0].boxCellId === undefined || rows[0].boxCellId === '') {
+					that.showModel = true;
+				}else{
+					that.showModel = false;
+				}
+				that.updateCellDialogVisible = true;
+			},
+			updateCell:function(){
+				let that = this;
+				var rows = $('#bootstrap-table').bootstrapTable('getAllSelections');
+				if (rows.length > 1) {
+					$.modal.msgError("请勾选一箱物料！");
+					return false;
+				}
+				if(rows[0].boxCellId != null){
+					that.cellId = rows[0].boxCellId;
+				}else {
+					if (that.cellId === null || that.cellId === undefined || that.cellId === '') {
+						$.modal.msgError("请选择货位！");
+						return false;
+					}
+				}
+				if(that.state === null || that.state === undefined || that.state === ''){
+					$.modal.msgError("请选择状态！");
+					return false;
+				}
+				that.updateCellDialogVisible = false;
+				$.modal.loading("处理中，请稍等！");
+				var list = {
+					boxId: rows[0].boxId,
+					boxCellId: that.cellId,
+					boxState: that.state,
+				}
+				$.ajax({
+					type: "post",
+					url: "/boxInfo/update",
+					data: JSON.stringify(list),
+					dataType: "json",
+					contentType: "application/json;charset-UTF-8",
+					error: function (data) {
+						$.modal.msgError("系统错误，请联系管理员");
+						$.modal.closeLoading();
+					},
+					success: function (data) {
+						$.modal.closeLoading();
+						if (data.code == 200) {
+							$.modal.msgSuccess("处理成功！");
+							$.table.refresh();
+							that.state = '';
+							that.cellId = '';
+							that.showModel = true;
+							that.getCell();
+						} else {
+							that.updateCellDialogVisible = true;
+							$.modal.msgError(data.msg);
+						}
+					}
+				});
+			},
+			getCell:function(){
+				let that = this;
+				//货位信息
+				$.ajax({
+					type: "post",
+					url: "/system/cellInfo/findList",
+					data: JSON.stringify({keyWords:""}),
+					dataType: "json",
+					contentType: "application/json;charset-UTF-8",
+					error: function (data) {
+						$.modal.msgError("系统错误");
+					},
+					success: function (data) {
+						if (data.code === 200) {
+							that.cells = [];
+							that.cells = data.data;
+						} else {
+							$.modal.msgError("获取账户别名失败,请刷新或者联系管理员！");
+						}
+					},
+				});
+			},
+			updateBoxType:function(){
+				let that = this;
+				var rows = $('#bootstrap-table').bootstrapTable('getAllSelections');
+				if (rows.length > 1) {
+					$.modal.msgError("请勾选一筐！");
+					return false;
+				}
+				if(rows[0].boxType === that.boxType){
+					if(that.boxType === 1){
+						$.modal.msgError("当前筐类型已是A筐！");
+						return false;
+					}else{
+						$.modal.msgError("当前筐类型已是B筐！");
+						return false;
+					}
+				}
+				that.updateBoxTypeDialogVisible = false;
+				$.modal.loading("处理中，请稍等！");
+				var list = {
+					boxId: rows[0].boxId,
+					boxType: that.boxType,
+				}
+				$.ajax({
+					type: "post",
+					url: "/boxInfo/updateBoxType",
+					data: JSON.stringify(list),
+					dataType: "json",
+					contentType: "application/json;charset-UTF-8",
+					error: function (data) {
+						$.modal.msgError("系统错误，请联系管理员");
+						$.modal.closeLoading();
+					},
+					success: function (data) {
+						$.modal.closeLoading();
+						if (data.code == 200) {
+							$.modal.msgSuccess("处理成功！");
+							$.table.refresh();
+							that.boxType = '';
+							that.getCell();
+						} else {
+							that.updateBoxTypeDialogVisible = true;
+							$.modal.msgError(data.msg);
+						}
+					}
+				});
+			}
+		},
+		mounted:function(){
+			var that = this;
+			var options = {
+				url: prefix + "/findList",
+				createUrl: prefix + "/add",
+				updateUrl: prefix + "/edit/{id}",
+				removeUrl: prefix + "/delete/{id}",
+				exportUrl: prefix + "/export",
+				modalName: "容器",
+				showExport: false,
+				columns: [
+					{
+						checkbox: true
+					},
+					{
+						field : 'boxId',
+						title : 'ID',
+						visible: false
+					},
+					{
+						field : 'boxCode',
+						title : '箱号',
+						sortable: true
+					},
+					{
+                        field : 'boxType',
+                        title : '类型',
+                        sortable: true,
+						formatter:function(value,row,index){
+                        	if(value === 1){
+								return "A筐";
+							}else{
+								return "B筐";
+							}
+						}
+                    },
+					/*{
+						field : 'boxMemo',
+						title : '备注',
+						sortable: true
+					},*/
+
+					{
+						field : 'hasGoods',
+						title : '是否有货',
+						sortable: true,
+						formatter: function(value, row, index) {
+							if(value==0){
+								return "无货";
+							}else if(value==1){
+								return "有货"
+							}
+						}
+					},
+					{
+						field : 'boxState',
+						title : '位置状态',
+						sortable: true,
+						formatter: function(value, row, index) {
+							if(value==1){
+								return "货位上"
+							}else if(value==2){
+								return "任务中"
+							}
+							else if(value==3){
+								return "出库至入库口任务中"
+							}
+						}
+					},
+					{
+						field : 'location',
+						title : '位置',
+						visible: true
+					},
+					// {
+					//     title: '操作',
+					//     align: 'center',
+					//     formatter: function(value, row, index) {
+					//         var actions = [];
+					//         actions.push('<a class="btn btn-success btn-xs ' + editFlag + '" href="#" onclick="$.operate.edit(\'' + row.boxId + '\')"><i class="fa fa-edit"></i>编辑</a> ');
+					//         // actions.push('<a class="btn btn-danger btn-xs ' + removeFlag + '" href="#" onclick="$.operate.remove(\'' + row.boxId + '\')"><i class="fa fa-remove"></i>删除</a>');                                /*actions.push('<a class="btn btn-success  btn-xs upCell ' + removeFlag + '"  href="#"   ><i class="fa fa-remove"></i>上架</a>');*/
+					//
+					//         return actions.join('');
+					//     }
+					// }
+				]
+			};
+			$.table.init(options);
+		},
+		created:function(){
+			let that = this;
+			that.getCell();
+		},
+	})
+
+</script>
+</body>
+</html>

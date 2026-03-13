@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.deer.wms.base.system.dao.CallAgvMapper">
+  <resultMap id="BaseResultMap" type="com.deer.wms.base.system.model.CallAgv">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="code" jdbcType="VARCHAR" property="code" />
+    <result column="method_name" jdbcType="VARCHAR" property="methodName" />
+      <result column="task_code" jdbcType="VARCHAR" property="taskCode" />
+      <result column="error_code" jdbcType="VARCHAR" property="errorCode" />
+      <result column="error_msg" jdbcType="VARCHAR" property="errorMsg" />
+      <result column="wip_entity" jdbcType="VARCHAR" property="wipEntity" />
+      <result column="item_code" jdbcType="VARCHAR" property="itemCode" />
+      <result column="quantity" jdbcType="INTEGER" property="quantity" />
+      <result column="create_time" jdbcType="VARCHAR" property="createTime" />
+  </resultMap>
+
+  <select id="findList" parameterType="com.deer.wms.base.system.model.CallAgvCriteria" resultMap="BaseResultMap">
+      select * from call_agv
+      where 1=1
+      <if test="methodName != null and methodName != ''">
+          and method_name = #{methodName}
+      </if>
+      <if test="errorCode != null and errorCode != ''">
+          and error_code = #{errorCode}
+      </if>
+      <if test="state != null and state == 1">
+          and TIMESTAMPDIFF(DAY,date(create_time),curdate()) &gt; 30
+      </if>
+      order by id desc
+  </select>
+</mapper>

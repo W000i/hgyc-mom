@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+	<th:block th:include="include :: header('入库单列表')" />
+</head>
+<body class="gray-bg">
+<div id="myVue">
+     <div class="container-div" onmousemove="parent.updateTimeOut()">
+		<div class="row">
+
+			<div class="col-sm-12 search-collapse">
+				<form id="formId">
+					<div class="select-list">
+						<ul>
+							<li>
+								订单号：<input type="text" name="billNo"/>
+							</li>
+							<li>
+								料号：<input type="text" name="itemCode"/>
+							</li>
+							<li>
+								<a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+								<a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+							</li>
+						</ul>
+					</div>
+				</form>
+			</div>
+			
+	        <div class="btn-group-sm" id="toolbar" role="group">
+				<a class="btn btn-primary btn-edit disabled"  @click="refreshOrder()" shiro:hasPermission="billOutMaster:refreshOrder" style="background-color: #409EFF;border-color: #409EFF;">
+					<i class="glyphicon glyphicon-refresh" ></i> 同步EBS订单信息
+				</a>
+				<!--<a class="btn btn-success" onclick="addBill()" shiro:hasPermission="in:billInMaster:add">
+					<i class="fa fa-plus"></i> 添加
+				</a>
+				<a class="btn btn-primary btn-edit disabled" onclick="$.operate.edit()" shiro:hasPermission="in:billInMaster:edit">
+					<i class="fa fa-edit"></i> 修改
+				</a>
+				<a class="btn btn-danger btn-del btn-del disabled" onclick="$.operate.removeAll()" shiro:hasPermission="in:billInMaster:remove">
+					<i class="fa fa-remove"></i> 删除
+				</a>
+				<a class="btn btn-warning" onclick="$.table.exportExcel()" shiro:hasPermission="in:billInMaster:export">
+						<i class="fa fa-download"></i> 导出
+				 </a>-->
+			</div>
+			<div class="col-sm-12 select-table table-striped">
+				<table id="bootstrap-table" data-mobile-responsive="true" style="white-space:nowrap"></table>
+			</div>
+		</div>
+	</div>
+
+
+    <div th:include="include :: footer"></div>
+</div>
+    <script th:inline="javascript">
+        var editFlag = [[${@permission.hasPermi('in:billInMaster:edit')}]];
+        var removeFlag = [[${@permission.hasPermi('in:billInMaster:remove')}]];
+        var prefix = ctx + "in/billInMaster";
+
+
+        function addBill(){
+
+			var _url = prefix+"/add";
+
+			$.modal.openFull("新增",_url);
+		}
+
+        $(function() {
+            var options = {
+                url: prefix + "/findList",
+                createUrl: prefix + "/add",
+                updateUrl: prefix + "/edit/{id}",
+                removeUrl: prefix + "/remove",
+				exportUrl: prefix + "/export",
+				detailUrl:prefix + "/detail",
+                modalName: "入库单",
+		        showExport: false,
+                columns: [
+                	{
+		        	    checkbox: true
+		        	},
+					{
+						field : 'billInDetailId',
+						title : 'id',
+						sortable: true
+					},
+					{
+						field : 'segment',
+						title : '采购订单号',
+						sortable: true
+					},
+					{
+						field : 'poHeaderId',
+						title : '采购订单头ID',
+						sortable: true
+					},
+					{
+						field : 'poLineId',
+						title : '采购订单行ID',
+						sortable: true
+					},
+					{
+						field : 'lineNum',
+						title : '采购订单行号',
+						sortable: true
+					},
+					{
+						field : 'lineLocationId',
+						title : '发运行ID',
+						sortable: true
+					},
+					{
+						field : 'shipmentNum',
+						title : '发运行号',
+						sortable: true
+					},
+					{
+						field : 'poDistributionId',
+						title : '分配行ID',
+						sortable: true
+					},
+					{
+						field : 'distributionNum',
+						title : '分配行号',
+						sortable: true
+					},
+					{
+						field : 'itemId',
+						title : '物料Id',
+						sortable: true
+					},
+					{
+						field : 'itemCode',
+						title : '物料编码',
+						sortable: true
+					},
+					{
+						field : 'itemDescription',
+						title : '物料描述',
+						visible: true
+					},
+					{
+						field : 'unitMeasLookupCode',
+						title : '采购单位',
+						sortable: true
+					},
+					{
+						field : 'orgId',
+						title : 'OU组织ID',
+						sortable: true
+					},
+					{
+						field : 'shipToOrganizationId',
+						title : '接收库存组织ID',
+						sortable: true
+					},
+					{
+						field : 'quantity',
+						title : '订单数量',
+						sortable: true
+					},
+					{
+						field : 'quantityReceived',
+						title : '已接收数量',
+						sortable: true
+					},
+					{
+						field : 'surplusReceivedQuantity',
+						title : '可接收数量',
+						sortable: true
+					},
+					{
+						field : 'supplierCode',
+						title : '供应商编码',
+						sortable: true
+					},
+					{
+						field : 'supplierName',
+						title : '供应商名称',
+						sortable: true
+					},
+					{
+						field : 'expectedArrivalDate',
+						title : '预计到货日期',
+						sortable: true
+					},
+					{
+						field : 'createTime',
+						title : '创建时间',
+						sortable: true
+					},
+					{
+						field : 'createUserName',
+						title : '创建人',
+						sortable: true
+					},
+		        	/*{
+		        	    title: '操作',
+		        	    align: 'center',
+						events: {
+							'click .detail': function (e, value, rowData, index) {
+								var id = rowData.billId;
+
+								var _url =$.table._option.detailUrl;
+								localStorage.setItem(_url,id.toString());
+								$.modal.openFull("详情",_url);
+							},
+							'click .edit': function (e, value, rowData, index) {
+								$.operate.edit(rowData.billId)
+
+							},
+							'click .delete': function (e, value, rowData, index) {
+								$.operate.remove(rowData.billId)
+
+
+							}
+						},
+		        	    formatter: function(value, row, index) {
+		        	    	var actions = [];
+							actions.push('<a class="btn   btn-xs  detail"><i class="fa fa-remove"></i>查看</a>');
+							actions.push('<a class="btn btn-success btn-xs edit "><i class="fa fa-edit"></i>编辑</a> ');
+                	        actions.push('<a class="btn btn-danger btn-xs  delete"><i class="fa fa-remove"></i>删除</a>');
+							return actions.join('');
+		        	    }
+		        	}*/
+		        ]
+            };
+            $.table.init(options);
+
+        });
+		var app = new Vue({
+			el: '#myVue',
+			data: {
+
+
+			},
+			methods: {
+				//退出
+				refreshOrder:function(){
+					let that = this;
+					var rows = $('#bootstrap-table').bootstrapTable('getAllSelections');
+					$.modal.confirm("确定同步此订单信息？",function(){
+						if(rows.length>1){
+							$.modal.msgError("请勾选单条！")
+							return false;
+						}
+						$.modal.loading("处理中，请稍后");
+						$.ajax({
+							type: "post",
+							url: "/in/billInMaster/refreshOrder",
+							data: JSON.stringify({billInDetailId:rows[0].billInDetailId}),
+							dataType: "json",
+							contentType: "application/json;charset-UTF-8",
+							async: false,
+							error: function (data) {
+								$.modal.msgError("系统错误");
+								$.modal.closeLoading();
+							},
+							success: function (data) {
+								$.modal.closeLoading();
+								if (data.code === 200) {
+									$.table.refresh();
+									$.modal.msgSuccess("退回成功");
+								} else {
+									$.modal.msgError(data.data);
+								}
+							},
+						});
+					});
+				},
+			},
+			created:function(){
+				let that = this;
+			},
+			mounted: function () {
+				$('#card').focus();
+			}
+		})
+    </script>
+</body>
+</html>

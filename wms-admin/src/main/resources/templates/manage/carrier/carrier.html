@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('载具信息及状态')"/>
+</head>
+<body class="gray-bg">
+<div id="myVue">
+    <div class="container-div" onmousemove="parent.updateTimeOut()">
+        <div class="row">
+            <div class="col-sm-12 search-collapse">
+                <form id="formId">
+                    <div class="select-list">
+                        <ul>
+                            <li>
+                                工单号：<input type="text" name="billNo"/>
+                            </li>
+                            <li>
+                                状态：
+                                <select name="state">
+                                    <option value="-1"></option>
+                                    <option value="1">排队中</option>
+                                    <option value="2">已出库</option>
+                                </select>
+                            </li>
+                            <li class="select-time">
+                                <label>载具入库时间： </label>
+                                <input type="text" class="time-input" id="startTime" placeholder="开始时间" name="startTime"/>
+                                <span>-</span>
+                                <input type="text" class="time-input" id="endTime" placeholder="结束时间" name="endTime"/>
+                            </li>
+                            <li>
+                                <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i
+                                        class="fa fa-search"></i>&nbsp;搜索</a>
+                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i
+                                        class="fa fa-refresh"></i>&nbsp;重置</a>
+                            </li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+
+            <div class="btn-group-sm" id="toolbar" role="group">
+                <a class="btn btn-primary btn-edit disabled"  @click="callAGV()" shiro:hasPermission="carrier:callAGV"
+                   style="background-color: #409EFF;border-color: #409EFF;">
+                    <i class="glyphicon glyphicon-log-out" ></i> 呼叫AGV工单出库
+                </a>
+                <a class="btn btn-primary"  @click="manualCallAGV()" shiro:hasPermission="carrier:manualCallAGV"
+                   style="background-color: #409EFF;border-color: #409EFF;">
+                    <i class="glyphicon glyphicon-log-out" ></i> 呼叫AGV取空载具
+                </a>
+                <a class="btn btn-danger btn-edit disabled" @click="manualFinish()" shiro:hasPermission="carrier:manualFinish"
+                   style="background-color: #ffc60d;border-color: #ffc60d;">
+                    <i class="glyphicon glyphicon-ok"></i> 已出库
+                </a>
+                <a class="btn btn-warning" onclick="$.table.exportExcel()" shiro:hasPermission="system:carrier:export">
+                    <i class="fa fa-download"></i> 导出
+                </a>
+            </div>
+            <div class="col-sm-12 select-table table-striped">
+                <table id="bootstrap-table" data-mobile-responsive="true" style="white-space:nowrap"></table>
+            </div>
+        </div>
+    </div>
+    <div th:include="include :: footer"></div>
+</div>
+<script th:inline="javascript">
+    // var editFlag = [[${@permission.hasPermi('in:boxItem:edit')}]];
+    var prefix = ctx + "carrier";
+
+    $(function () {
+        var options = {
+            url: prefix + "/findList",
+            createUrl: prefix + "/add",
+            updateUrl: prefix + "/edit/{id}",
+            removeUrl: prefix + "/remove",
+            exportUrl: prefix + "/export",
+            detailUrl: prefix + "/detail",
+            modalName: "载具信息及状态",
+            showExport: false,
+            columns: [
+                {
+                    checkbox: true,
+                },
+                {
+                    field: 'carrierId',
+                    title: 'WMS载具ID',
+                    visible: false
+                },
+                {
+                    field: 'carrierCode',
+                    title: '载具编码',
+                    sortable: true
+                },
+                {
+                    field: 'billNo',
+                    title: '工单号',
+                    sortable: true
+                },
+                {
+                    field: 'alreadyOutQuantity',
+                    title: '已出数量',
+                    sortable: true
+                },
+                {
+                    field: 'createTime',
+                    title: '载具入库时间',
+                    sortable: true
+                },
+                {
+                    field: 'time',
+                    title: '出库时间',
+                    visible: true
+                },
+
+                {
+                    field: 'carrierState',
+                    title: '状态',
+                    sortable: true,
+                    formatter: function (value, row, index) {
+                        if (value === 1) {
+                            return "排队中"
+                        }
+                        if (value === 2) {
+                            return "已出库"
+                        }
+                    }
+                }
+            ]
+        };
+        $.table.init(options);
+    });
+    var app = new Vue({
+        el: '#myVue',
+        data: {
+            operator:'',
+            card: '',
+            loginPerson: '',
+            loginPersonCardNo: '',
+            taskStartTime: '',
+
+        },
+        methods: {
+            callAGV:function(){
+                let that = this;
+                $.modal.confirm("是否确定手动呼叫AGV工单发料？",function(){
+                    var rows = $('#bootstrap-table').bootstrapTable('getAllSelections');
+                    if(rows.length>1){
+                        $.modal.msgError("请勾选单个载具！")
+                        return false;
+                    }
+                    $.modal.loading("处理中，请稍等");
+                    var list = {
+                        carrierId: rows[0].carrierId,
+                    };
+                    $.ajax({
+                        type: "post",
+                        url: "/carrier/callAgv",
+                        data: JSON.stringify(list),
+                        dataType: "json",
+                        contentType: "application/json;charset-UTF-8",
+                        /*async: false,*/
+                        error: function (data) {
+                            $.modal.msgError("系统错误，请联系管理员");
+                            $.modal.closeLoading();
+                        },
+                        success: function (data) {
+                            $.modal.closeLoading();
+                            if (data.code == 200) {
+                                $.table.refresh();
+                                $.modal.msgSuccess("处理成功!");
+                            } else if(data.code === 100008){
+                                $.modal.msgError(data.data);
+                            }else{
+                                $.modal.msgError(data.msg);
+                            }
+                        }
+                    });
+                });
+            },
+
+            manualCallAGV:function(){
+                let that = this;
+                $.modal.confirm("是否确定手动呼叫AGV取空载具？",function(){
+                    $.modal.loading("呼叫中，请稍后！");
+                    $.ajax({
+                        type: "get",
+                        url: "/out/billOutDetail/manualCallAgv",
+                        data: {},
+                        dataType: "json",
+                        contentType: "application/json;charset-UTF-8",
+                        error: function (data) {
+                            $.modal.msgError("系统错误，请联系管理员");
+                            $.modal.closeLoading();
+                        },
+                        success: function (data) {
+                            $.modal.closeLoading();
+                            if (data.code == 200) {
+                                $.table.refresh();
+                                $.modal.msgSuccess("呼叫成功!");
+                            }
+                            else{
+                                $.modal.msgError(data.msg);
+                            }
+                        }
+                    });
+                });
+            },
+
+            manualFinish:function(){
+                $.modal.confirm("是否确定此载具手动出库？",function(){
+                    var rows = $('#bootstrap-table').bootstrapTable('getAllSelections');
+                    if(rows.length>1){
+                        $.modal.msgError("请勾选单个载具！")
+                        return false;
+                    }
+                    $.modal.loading("处理中，请稍等");
+                    var list = {
+                        carrierId: rows[0].carrierId,
+                    };
+                    $.ajax({
+                        type: "post",
+                        url: "/carrier/AGVManualOut",
+                        data: JSON.stringify(list),
+                        dataType: "json",
+                        contentType: "application/json;charset-UTF-8",
+                        error: function (data) {
+                            $.modal.msgError("系统错误，请联系管理员");
+                            $.modal.closeLoading();
+                        },
+                        success: function (data) {
+                            $.modal.closeLoading();
+                            if (data.code == 200) {
+                                $.table.refresh();
+                                $.modal.msgSuccess("处理成功!");
+                            }
+                            else{
+                                $.modal.msgError(data.data);
+                            }
+                        }
+                    });
+                });
+            },
+        },
+        created:function(){
+
+        },
+        mounted: function () {
+        }
+    })
+</script>
+</body>
+</html>
