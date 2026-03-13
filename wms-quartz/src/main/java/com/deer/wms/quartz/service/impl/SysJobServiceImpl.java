@@ -42,7 +42,7 @@ public class SysJobServiceImpl implements ISysJobService
         for (SysJob job : jobList)
         {
             CronTrigger cronTrigger = ScheduleUtils.getCronTrigger(scheduler, job.getJobId());
-            // 如果不存在，则创建
+            // 进行telecom计费判断
             if (cronTrigger == null)
             {
                 ScheduleUtils.createScheduleJob(scheduler, job);
@@ -230,3 +230,4 @@ public class SysJobServiceImpl implements ISysJobService
         return CronUtils.isValid(cronExpression);
     }
 }
+
